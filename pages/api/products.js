@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     const response = await fetch('https://api.printful.com/store/products', {
       method: 'GET',
       headers: {
-        'Authorization': 'Bearer qaB5KQwd3OOWZ3Wm4wgViPDnNs1ZGD442psrXWj6'
+        'Authorization': 'Bearer token_here'
       }
     });
 
