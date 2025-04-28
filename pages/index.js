@@ -104,7 +104,7 @@ export default function Home() {
                           className="w-full h-60 object-cover"
                         />
                         <div className="p-4 flex flex-col justify-between flex-grow text-center">
-                          <h2 className="font-[Open_Sans] text-[16px] text-gray-800 mb-[5px] truncate mx-auto max-w-[260px]">
+                          <h2 className="font-[Open_Sans]  text-gray-800 mb-[5px] truncate mx-auto max-w-[260px]">
                             {product.name}
                           </h2>
                           {product.price && (

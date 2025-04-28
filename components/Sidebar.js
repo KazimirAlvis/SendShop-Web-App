@@ -1,10 +1,27 @@
+"use client";
+
+import { useCart } from "@/components/CartContext";
+
 export default function Sidebar() {
-    return (
-        <aside className="w-[180px] flex flex-col items-center pt-[60px] px-[32px]">
-        <div className="w-[150px] h-[150px] overflow-hidden rounded-full mb-0 pb-0">
-          <img src="/images/PH-logo.png" alt="Store Logo" className="h-auto w-full mb-0" />
-        </div>
-      </aside>
-    );
-  }
-  
+  const { cartItems, cartTotal } = useCart();
+
+  return (
+    <aside className="w-[180px] bg-white flex flex-col items-center pt-[60px] pr-[32px] pl-[32px]">
+      {/* Store Logo */}
+      <div className="w-[150px] h-[150px] overflow-hidden rounded-full mb-4">
+        <img src="/images/PH-logo.png" alt="Store Logo" className="h-auto w-full" />
+      </div>
+
+      {/* Cart Summary */}
+      <div className="text-center mt-6 font-[Open_Sans]">
+        <p className="text-[14px] text-gray-600 mb-1">🛒 {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}</p>
+        <p className="text-[16px] font-bold text-gray-800">${cartTotal}</p>
+      </div>
+
+      {/* Optional: Add cart button link */}
+      <a href="/cart" className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center text-sm">
+        View Cart
+      </a>
+    </aside>
+  );
+}
