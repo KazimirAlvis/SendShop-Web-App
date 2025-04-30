@@ -93,24 +93,23 @@ export default function ProductDetail() {
             <div className="mb-6">
               <label htmlFor="size" className="block mb-2 font-[Open_Sans] text-gray-700 pb-[10px]">Select a Size:</label>
               <select
-                id="size"
-                name="size"
-                onChange={(e) => {
-                  const variantId = parseInt(e.target.value);
-                  const variant = product.detail?.sync_variants.find(v => v.id === variantId);
-                  setSelectedVariant(variant);
-                }}
-                className="text-[16px] py-[15px] border p-2 rounded w-full font-[Open_Sans]"
-              >
-                <option value="">Select Size</option>
-                {product.detail?.sync_variants.map(variant => (
-                  <option key={variant.id} value={variant.id}>
-                    {variant.variant_name 
-                      ? `${variant.variant_name.replace('Size - ', '')} - $${formatPrice(variant.retail_price)}`
-                      : `Unknown Size - $${formatPrice(variant.retail_price)}`}
-                  </option>
-                ))}
-              </select>
+  id="size"
+  name="size"
+  onChange={(e) => {
+    const variantId = parseInt(e.target.value);
+    const variant = product.detail?.sync_variants.find(v => v.id === variantId);
+    setSelectedVariant(variant);
+  }}
+  className="text-[16px] py-[15px] border p-2 rounded w-full font-[Open_Sans]"
+>
+  <option value="">Select Size</option>
+  {product.detail?.sync_variants.map(variant => (
+    <option key={variant.id} value={variant.id}>
+      {variant.name ? `${variant.name.replace('Size - ', '')} - $${variant.retail_price}` : `Unknown - $${variant.retail_price}`}
+    </option>
+  ))}
+</select>
+
             </div>
           )}
 

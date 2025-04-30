@@ -2,10 +2,13 @@
 
 import { useCart } from "@/components/CartContext";
 import Sidebar from "@/components/Sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { countries } from "@/utils/countries";
+
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal } = useCart();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,29 +18,59 @@ export default function CheckoutPage() {
     zip: "",
     country: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🟡 Submit button clicked");
 
     if (cartItems.length === 0) {
       alert("Your cart is empty.");
       return;
     }
 
-    // Later: Send order to Printful API here
-    console.log("Order Data:", {
-      formData,
-      cartItems,
-      total: cartTotal
-    });
+    try {
+      setSubmitting(true);
+      const response = await fetch('/api/createOrder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formData,
+          cartItems,
+        }),
+      });
 
-    alert("Order submitted! (In real version, this would send to Printful)");
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("✅ Order successfully placed. Redirecting...");
+
+        clearCart();
+        router.push("/thank-you");
+      } else {
+        console.error("❌ Failed to place order:", result.error);
+        alert("Failed to place order: " + result.error);
+      }
+
+    } catch (error) {
+      console.error("Order submission failed:", error);
+      alert("Order submission failed. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    console.log("✅ Cart Items:", cartItems);
+  }, [cartItems]);
 
   return (
     <div className="flex min-h-screen bg-white text-gray-900">
@@ -55,7 +88,31 @@ export default function CheckoutPage() {
           <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" required className="border p-3 rounded" />
           <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" required className="border p-3 rounded" />
           <input type="text" name="zip" value={formData.zip} onChange={handleChange} placeholder="Zip Code" required className="border p-3 rounded" />
-          <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="Country" required className="border p-3 rounded" />
+
+          {/* ✅ Country Dropdown */}
+          <select
+  name="country"
+  value={formData.country}
+  onChange={handleChange}
+  required
+  className="border p-3 rounded"
+>
+  <option value="">Select Country</option>
+  {countries.map((c) => (
+    <option key={c.code} value={c.code}>
+      {c.name}
+    </option>
+  ))}
+</select>
+
+<button 
+          type="submit" 
+          disabled={submitting}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"
+        >
+          {submitting ? "Placing Order..." : "Place Order"}
+        </button>
+
         </form>
 
         <div className="mb-8">
@@ -70,13 +127,11 @@ export default function CheckoutPage() {
             </div>
           ))}
           <div className="text-right font-bold text-xl mt-4 font-[Open_Sans]">
-            Total: ${cartTotal}
+            Total: ${parseFloat(cartTotal).toFixed(2)}
           </div>
         </div>
 
-        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded">
-          Place Order
-        </button>
+       
       </main>
     </div>
   );

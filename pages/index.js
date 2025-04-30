@@ -14,7 +14,11 @@ export default function Home() {
       try {
         const response = await fetch('/api/products');
         const data = await response.json();
-        const basicProducts = data.result || [];
+        console.log("Products API Response:", data);  // 👈 ADD THIS
+        
+        const basicProducts = Array.isArray(data.result) ? data.result : [];
+        
+        
 
         const detailedProducts = await Promise.all(
           basicProducts.map(async (product) => {
