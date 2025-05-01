@@ -4,8 +4,6 @@ import { useCart } from "@/components/CartContext"; // ✅
 import Sidebar from "@/components/Sidebar"; // ✅
 import Link from 'next/link';
 
-
-
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart(); // <--- add updateQuantity here!
   
