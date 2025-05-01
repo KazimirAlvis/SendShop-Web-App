@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/components/CartContext";
+import Link from 'next/link';
 
 export default function Sidebar() {
   const { cartItems, cartTotal } = useCart();
@@ -19,9 +20,9 @@ export default function Sidebar() {
       </div>
 
       {/* Optional: Add cart button link */}
-      <a href="/cart" className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center text-sm">
+      <Link href="/cart" className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center text-sm">
         View Cart
-      </a>
+      </Link>
     </aside>
   );
 }
