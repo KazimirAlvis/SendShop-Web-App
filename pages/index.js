@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import slugify from 'slugify';
-import Sidebar from '@/components/Sidebar';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -14,49 +13,35 @@ export default function Home() {
       try {
         const response = await fetch('/api/products');
         const data = await response.json();
-        console.log("Products API Response:", data);  // 👈 ADD THIS
-        
-        const basicProducts = Array.isArray(data.result) ? data.result : [];
-        
-        
+        const basicProducts = data.result || [];
 
         const detailedProducts = await Promise.all(
-          basicProducts.map(async (product) => {
-            const detailResponse = await fetch(`/api/product/${product.id}`);
-            const detailData = await detailResponse.json();
-        
-            console.log("Detail for:", product.name, detailData);
-        
-            const syncVariants = detailData.result?.sync_variants || [];
-        
-            console.log("Sync Variants:", syncVariants);
-        
-            let lowestPrice = null;
-            if (syncVariants.length > 0) {
-              const validPrices = syncVariants
-                .map(variant => parseFloat(variant.retail_price))
-                .filter(price => !isNaN(price));
-        
-              console.log("Valid Prices:", validPrices);
-        
-              if (validPrices.length > 0) {
-                lowestPrice = Math.min(...validPrices).toFixed(2);
+          basicProducts
+            .filter(product => product.name) // ensure slugify doesn't break
+            .map(async (product) => {
+              const detailResponse = await fetch(`/api/product/${product.id}`);
+              const detailData = await detailResponse.json();
+
+              const syncVariants = detailData.result?.sync_variants || [];
+
+              let lowestPrice = null;
+              if (syncVariants.length > 0) {
+                const validPrices = syncVariants
+                  .map(variant => parseFloat(variant.retail_price))
+                  .filter(price => !isNaN(price));
+
+                if (validPrices.length > 0) {
+                  lowestPrice = Math.min(...validPrices).toFixed(2);
+                }
               }
-            }
-        
-            console.log("Lowest price:", lowestPrice);
-        
-            return {
-              ...product,
-              price: lowestPrice,
-              slug: slugify(product.name, { lower: true }),
-            };
-          })
+
+              return {
+                ...product,
+                price: lowestPrice,
+                slug: slugify(product.name, { lower: true }),
+              };
+            })
         );
-        
-        
-        
-        
 
         setProducts(detailedProducts);
       } catch (error) {
@@ -71,7 +56,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      
       {/* Announcement Banner */}
       <div className="w-full bg-[#000] py-3 text-center">
         <p className="font-bold text-[#fff] font-[Open_Sans]">
@@ -81,9 +65,12 @@ export default function Home() {
 
       {/* Main Body */}
       <div className="flex flex-1">
-        
-        {/* Sidebar */}     
-         <Sidebar />
+        {/* Sidebar */}
+        <aside className="w-[180px] flex flex-col items-center pt-[60px] px-[32px]">
+          <div className="w-[150px] h-[150px] overflow-hidden rounded-full mb-0 pb-0">
+            <img src="/images/PH-logo.png" alt="Store Logo" className="h-auto w-full mb-0" />
+          </div>
+        </aside>
 
         {/* Main Content */}
         <main className="flex-1 p-8 pt-[32px] pb-[60px] px-[32px]">
@@ -97,10 +84,10 @@ export default function Home() {
             <p className="text-gray-500">Loading products...</p>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[32px]">
-              {Array.isArray(products) && products.length > 0 ? (
+              {products.length > 0 ? (
                 products.map((product) => (
                   <div key={product.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">
-                  <Link href={`/product/${product.slug}`}>
+                    <Link href={`/product/${product.slug}`}>
                       <div className="block text-[#000] no-underline">
                         <img
                           src={product.thumbnail_url}
@@ -108,7 +95,7 @@ export default function Home() {
                           className="w-full h-60 object-cover"
                         />
                         <div className="p-4 flex flex-col justify-between flex-grow text-center">
-                          <h2 className="font-[Open_Sans]  text-gray-800 mb-[5px] truncate mx-auto max-w-[260px]">
+                          <h2 className="font-[Open_Sans] text-[16px] text-gray-800 mb-[5px] truncate mx-auto max-w-[260px]">
                             {product.name}
                           </h2>
                           {product.price && (
@@ -127,9 +114,7 @@ export default function Home() {
             </div>
           )}
         </main>
-
       </div>
-
     </div>
   );
 }

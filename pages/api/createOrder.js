@@ -21,8 +21,9 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          confirm: true, // ✅ This submits the order instead of saving as draft
+           
           recipient: {
+            confirm: true,
             name: formData.name,
             address1: formData.address,
             city: formData.city,
