@@ -89,7 +89,7 @@ export default function CartPage() {
             Total: ${cartTotal}
           </h2>
           {/* Checkout Button Placeholder */}
-          <Link href="/checkout">
+          <a href="/checkout">
   <button
     disabled={cartItems.length === 0}
     className={`w-full font-bold py-3 px-6 rounded 
@@ -97,7 +97,7 @@ export default function CartPage() {
   >
     Proceed to Checkout
   </button>
-</Link>
+</a>
 
         </div>
       </main>
