@@ -20,9 +20,9 @@ export default function CartPage() {
         {/* Empty Cart Message */}
         <main className="flex-1 p-8 flex flex-col justify-center items-center">
           <h1 className="text-2xl font-bold mb-4 font-[Open_Sans]">Your Cart is Empty</h1>
-          <a href="/" className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+          <Link href="/" className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
             Continue Shopping
-          </a>
+          </Link>
         </main>
       </div>
     );
