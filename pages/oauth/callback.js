@@ -1,46 +1,57 @@
-// /pages/oauth/callback.js
-"use client";
+import { serialize } from 'cookie';
 
-import { useEffect } from "react";
-import { useRouter } from "next/router";
+export default async function handler(req, res) {
+  const { code } = req.query;
 
-export default function OAuthCallback() {
-  const router = useRouter();
-  const { code } = router.query;
+  if (!code) {
+    return res.status(400).json({ error: "Missing authorization code." });
+  }
 
-  useEffect(() => {
-    if (!code) return;
+  try {
+    const response = await fetch("https://www.printful.com/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        grant_type: "authorization_code",
+        client_id: process.env.PRINTFUL_CLIENT_ID,
+        client_secret: process.env.PRINTFUL_CLIENT_SECRET,
+        redirect_uri: process.env.PRINTFUL_REDIRECT_URI,
+      }),
+    });
 
-    async function sendCodeToAPI() {
-      try {
-        const res = await fetch("/api/oauth/handleToken", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ code }),
-        });
+    const data = await response.json();
 
-        const result = await res.json();
-
-        if (res.ok) {
-          console.log("✅ OAuth token saved");
-          router.push("/"); // or dashboard page
-        } else {
-          console.error("❌ OAuth failed:", result.error);
-        }
-      } catch (err) {
-        console.error("❌ Network error:", err);
-      }
+    if (!response.ok) {
+      console.error("OAuth Token Error:", data);
+      return res.status(500).json({ error: data.error || "OAuth failed." });
     }
 
-    sendCodeToAPI();
-  }, [code]);
+    const { access_token, store_id, expires_in } = data;
 
-  return (
-    <div className="p-10 text-center text-gray-800">
-      <h1 className="text-2xl font-bold mb-4">Connecting to Printful...</h1>
-      <p className="text-sm text-gray-500">Please wait, this will only take a second.</p>
-    </div>
-  );
+    // 🔐 Store the token and store ID in cookies
+    res.setHeader('Set-Cookie', [
+      serialize('printful_token', access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: expires_in || 3600,
+      }),
+      serialize('printful_store_id', String(store_id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: expires_in || 3600,
+      }),
+    ]);
+
+    console.log("✅ OAuth Success:", data);
+
+    return res.redirect('/'); // or redirect to a dashboard
+  } catch (err) {
+    console.error("OAuth callback error:", err);
+    return res.status(500).json({ error: "Server error during OAuth callback." });
+  }
 }

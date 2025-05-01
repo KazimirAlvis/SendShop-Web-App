@@ -1,23 +1,29 @@
+// /pages/api/product/[id].js
 export default async function handler(req, res) {
   const { id } = req.query;
+  const token = req.cookies.printful_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "Missing Printful token" });
+  }
 
   try {
-    const response = await fetch(`https://api.printful.com/store/products/${id}`, {
+    const printfulRes = await fetch(`https://api.printful.com/sync/products/${id}`, {
       headers: {
-        Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-      },
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Printful API error:', errorData);
-      return res.status(response.status).json(errorData);
+    const data = await printfulRes.json();
+
+    if (!printfulRes.ok) {
+      return res.status(printfulRes.status).json({ error: data.error?.message || "Failed to fetch product details" });
     }
 
-    const data = await response.json();
-    res.status(200).json(data);
+    return res.status(200).json({ result: data.result });
   } catch (error) {
-    console.error('Fetch error:', error);
-    res.status(500).json({ error: 'Something went wrong.' });
+    console.error("Product detail fetch error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
