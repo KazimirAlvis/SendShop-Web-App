@@ -16,7 +16,7 @@ export default function ThankYouPage() {
         </h1>
 
         <p className="text-lg text-gray-700 mb-8 font-[Open_Sans] max-w-md">
-          Your order has been successfully submitted. You'll receive an email confirmation shortly.
+          Your order has been successfully submitted. You&apos;ll receive an email confirmation shortly.
         </p>
 
         <Link href="/" passHref legacyBehavior>

@@ -135,7 +135,7 @@ export default function ProductDetail() {
 
           {/* Description */}
           <p className="font-[Open_Sans] text-gray-600 mt-6">
-            Eight waving arms, suction cupped and swirled. This is a demonstration store of the theme. These products are not for sale, but we hope you'll explore the theme to see if it's right for your Big Cartel shop.
+            Eight waving arms, suction cupped and swirled. This is a demonstration store of the theme. These products are not for sale, but we hope you&apos;ll explore the theme to see if it&apos;s right for your Big Cartel shop.
           </p>
         </div>
       </main>
