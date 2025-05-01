@@ -90,14 +90,14 @@ export default function CartPage() {
           </h2>
           {/* Checkout Button Placeholder */}
           <Link href="/checkout">
-  <button
-    disabled={cartItems.length === 0}
-    className={`w-full font-bold py-3 px-6 rounded 
-      ${cartItems.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
-  >
-    Proceed to Checkout
-  </button>
-</Link>
+          <button
+            disabled={cartItems.length === 0}
+            className={`w-full font-bold py-3 px-6 rounded 
+              ${cartItems.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"}`}
+          >
+            Proceed to Checkout
+          </button>
+        </Link>
 
         </div>
       </main>
