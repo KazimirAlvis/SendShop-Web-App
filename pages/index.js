@@ -3,8 +3,8 @@ import Link from 'next/link';
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <nav className="bg-white shadow p-4 flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-600">
+      <nav className="bg-[#000] shadow p-[20px] flex justify-between items-center">
+        <div className="text-2xl font-bold text-[#fff]">
           SendShop
         </div>
         <div>

@@ -6,7 +6,7 @@ export default function Signup() {
       <h1 className="text-3xl font-bold mb-6">Create Your SendShop Account</h1>
 
       <div className="flex flex-col space-y-4">
-        <Link href={`https://www.printful.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_PRINTFUL_REDIRECT_URI}`}
+        <Link href={`https://www.printful.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID}&redirect_url=${process.env.NEXT_PUBLIC_PRINTFUL_REDIRECT_URI}`}
           className="bg-blue-600 text-white py-3 px-6 rounded text-center hover:bg-blue-700">
           Connect Existing Printful Account
         </Link>
