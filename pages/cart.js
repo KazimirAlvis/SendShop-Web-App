@@ -1,14 +1,13 @@
 "use client";
 
-import { useCart } from "@/components/CartContext"; // ✅
-import Sidebar from "@/components/Sidebar"; // ✅
+import { useCart } from "@/components/CartContext"; 
+import Sidebar from "@/components/Sidebar"; 
 import Link from 'next/link';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart(); // <--- add updateQuantity here!
   
   
-
   if (cartItems.length === 0) {
     return (
       <div className="flex min-h-screen bg-white text-gray-900">
