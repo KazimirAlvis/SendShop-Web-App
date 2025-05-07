@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 
 // components/PrintfulConnect.js
-export default function PrintfulConnect() {
+export function PrintfulConnect() {
   const handleConnect = () => {
     const clientId = process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_PRINTFUL_REDIRECT_URI;
@@ -24,6 +24,7 @@ export default function PrintfulConnect() {
     </button>
   );
 }
+
 
 export default function Sidebar() {
   const { cartItems, cartTotal } = useCart();
