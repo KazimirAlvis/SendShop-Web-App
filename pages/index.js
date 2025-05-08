@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <nav className="bg-white shadow p-4 flex justify-between items-center">
-        <div className="text-2xl font-bold">
+        <div className="text-2xl font-bold text-blue-600">
           SendShop
         </div>
         <div>
