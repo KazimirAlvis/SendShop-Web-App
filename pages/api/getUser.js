@@ -1,16 +1,19 @@
-// pages/api/getUser.js
 import { authAdmin } from "@/lib/firebaseAdmin";
 
 export default async function handler(req, res) {
-  const token = req.cookies.token;
+  // Log all incoming cookies
+  console.log("🍪 Incoming cookies:", req.headers.cookie);
+
+  // Check for token cookie
+  const token = req.cookies?.token;
 
   if (!token) {
-    console.warn("⚠️ No token cookie found");
+    console.warn("⚠️ No token cookie found in request");
     return res.status(401).json({ error: "No token provided" });
   }
 
   try {
-    console.log("✅ Verifying token:", token.slice(0, 20) + "...");
+    console.log("🔐 Verifying token:", token.slice(0, 20) + "...");
 
     const decoded = await authAdmin.verifyIdToken(token);
 
