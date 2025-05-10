@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import Header from '@/components/Header';
+import Link from "next/link";
+
 
 export default function Login() {
   const router = useRouter();
@@ -92,7 +94,7 @@ export default function Login() {
 
           <p className="text-sm text-gray-500 text-center">
             Don&apos;t have an account?{' '}
-            <a href="/signup" className="text-blue-500 hover:underline">Sign up here</a>
+            <Link href="/signup" className="text-blue-500 hover:underline">Sign up here</Link>
           </p>
         </form>
       </div>

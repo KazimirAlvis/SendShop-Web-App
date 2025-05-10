@@ -4,6 +4,8 @@ import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/aut
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import Header from '@/components/Header';
+import Link from "next/link";
+
 
 export default function Signup() {
   const router = useRouter();
@@ -103,7 +105,8 @@ export default function Signup() {
 
           <p className="text-sm text-gray-500 text-center">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-500 hover:underline">Log in here</a>
+            <Link href="/login" className="text-blue-500 hover:underline">Log in here</Link>
+
           </p>
         </form>
       </main>

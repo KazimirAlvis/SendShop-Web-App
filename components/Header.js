@@ -16,12 +16,8 @@ export default function Header() {
       <Link href="/" className="text-2xl font-bold">SendShop</Link>
       <div>
         {user ? (
-          <a
-            href="/logout"
-            className="text-red-500 hover:text-red-700 font-medium"
-          >
-            Logout
-          </a>
+            <Link href="/logout" className="text-red-500 hover:text-red-700 font-medium">Logout</Link>
+
         ) : (
           <>
             <Link href="/login" className="mr-4 text-blue-500 hover:text-blue-700">Login</Link>
