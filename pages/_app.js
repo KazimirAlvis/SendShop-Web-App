@@ -3,7 +3,10 @@ import { useEffect } from "react";
 import { CartProvider } from "@/components/CartContext";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebaseClient";
+import { onAuthStateChanged } from "firebase/auth"; // you can keep this one
+
+
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
