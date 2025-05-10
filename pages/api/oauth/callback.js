@@ -1,5 +1,5 @@
 import { serialize } from 'cookie';
-import { authAdmin, dbAdmin } from '../../lib/firebaseAdmin'; // uses firebase-admin SDK
+import { authAdmin, dbAdmin } from '@/lib/firebaseAdmin';
 import { getAuth } from 'firebase-admin/auth';
 
 export default async function handler(req, res) {
