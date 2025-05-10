@@ -49,7 +49,7 @@ export default function AppearanceSettings() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">🎨 Shop Appearance</h1>
+      <h1 className="text-2xl font-semibold mb-4">Shop Appearance</h1>
       <Tabs />
 
       <form
@@ -144,7 +144,7 @@ export default function AppearanceSettings() {
             type="submit"
             className="bg-black text-white font-medium px-6 py-2 rounded hover:bg-gray-800"
           >
-            💾 Save Appearance
+            Save Appearance
           </button>
         </div>
       </form>

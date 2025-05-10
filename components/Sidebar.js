@@ -20,7 +20,7 @@ export default function Sidebar() {
               onClick={() => setShowSettings(!showSettings)}
               className="w-full text-left hover:underline"
             >
-              ⚙️ Settings {showSettings ? "▲" : "▼"}
+              Settings {showSettings ? "▲" : "▼"}
             </button>
             {showSettings && (
               <ul className="ml-4 mt-2 space-y-1">             

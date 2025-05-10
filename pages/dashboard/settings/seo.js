@@ -54,7 +54,7 @@ export default function SEOSettings() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">🔍 SEO Settings</h1>
+      <h1 className="text-2xl font-semibold mb-4">SEO Settings</h1>
       <Tabs />
 
       <form onSubmit={handleSave} className="mt-6 space-y-4 bg-white border p-6 rounded shadow">

@@ -43,7 +43,7 @@ export default function PasswordSettings() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">⚙️ Change Password</h1>
+      <h1 className="text-2xl font-semibold mb-4">Change Password</h1>
       <Tabs />
 
       <form onSubmit={handleChangePassword} className="mt-6 space-y-4 bg-white border p-6 rounded shadow">
