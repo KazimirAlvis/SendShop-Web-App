@@ -1,4 +1,3 @@
-// pages/dashboard/products/index.js
 import { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -21,7 +20,7 @@ export default function ProductList() {
   }, []);
 
   const fetchProducts = async (uid) => {
-    const q = query(collection(db, "products"), where("owner", "==", uid));
+    const q = query(collection(db, "products"), where("sellerId", "==", uid)); // ✅ fixed
     const querySnapshot = await getDocs(q);
     const results = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -38,6 +37,8 @@ export default function ProductList() {
     try {
       const res = await fetch("/api/printful-sync", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ critical to send auth cookie
       });
 
       if (!res.ok) {
@@ -93,7 +94,9 @@ export default function ProductList() {
             {products.map((p) => (
               <tr key={p.id} className="border-t hover:bg-gray-50">
                 <td className="p-2 border">{p.name || p.title}</td>
-                <td className="p-2 border">${p.price || "N/A"}</td>
+                <td className="p-2 border">
+                  {typeof p.price === "number" ? `$${p.price.toFixed(2)}` : "N/A"}
+                </td>
                 <td className="p-2 border">{p.description || "—"}</td>
                 <td className="p-2 border text-blue-600 underline break-all">
                   <a href={p.thumbnail_url || p.imageUrl} target="_blank" rel="noopener noreferrer">
