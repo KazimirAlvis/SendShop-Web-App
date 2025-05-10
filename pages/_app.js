@@ -27,7 +27,9 @@ export default function App({ Component, pageProps }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: freshToken }),
+            credentials: "include", // ✅ THIS is what makes the cookie persist
           });
+
           console.log("✅ Token refreshed.");
         } else {
           console.warn("🚫 User not authenticated.");
