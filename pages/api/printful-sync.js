@@ -1,14 +1,12 @@
-// pages/api/printful-sync.js
 import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
 import cookie from "cookie";
 
 export default async function handler(req, res) {
-  // Only allow POST requests
+  // ✅ Only allow POST
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Parse auth token from cookies
   const { token } = cookie.parse(req.headers.cookie || "");
 
   if (!token) {
@@ -33,17 +31,16 @@ export default async function handler(req, res) {
 
     const { result } = await resp.json();
 
-    if (!result || !Array.isArray(result)) {
+    if (!Array.isArray(result)) {
       throw new Error("Unexpected API result");
     }
 
     const batch = dbAdmin.batch();
-
     for (const item of result) {
       const ref = dbAdmin.collection("products").doc(item.id.toString());
       batch.set(ref, {
         ...item,
-        sellerId: uid, // 🔄 Changed from `owner` to `sellerId` to match frontend
+        sellerId: uid, // ✅ So we can query by seller later
         syncedAt: new Date().toISOString(),
       });
     }
