@@ -1,6 +1,11 @@
+// pages/api/store-info.js
 import { dbAdmin, authAdmin } from "@/lib/firebaseAdmin";
 
 export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
   const token = req.cookies.token;
 
   if (!token) {
