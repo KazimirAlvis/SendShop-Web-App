@@ -16,7 +16,7 @@ export default function App({ Component, pageProps }) {
     const checkAndRefreshToken = async (user) => {
       try {
         const res = await fetch("/api/getUser", {
-          credentials: "include", // ✅ Required to send token cookie
+          credentials: "include",
         });
 
         const data = await res.json();
@@ -25,15 +25,30 @@ export default function App({ Component, pageProps }) {
           console.log("✅ Authenticated:", data.uid);
         } else if (data.code === "token-expired") {
           console.log("🔄 Token expired. Refreshing...");
-          const freshToken = await user.getIdToken(true); // force refresh
+          const freshToken = await user.getIdToken(true);
+
           await fetch("/api/setToken", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: freshToken }),
-            credentials: "include", // ✅ THIS is what makes the cookie persist
+            credentials: "include",
           });
 
-          console.log("✅ Token refreshed.");
+          console.log("✅ Token refreshed. Waiting for cookie to apply...");
+
+          // ✅ Give browser time to apply Set-Cookie header before calling getUser again
+          await new Promise(resolve => setTimeout(resolve, 250));
+
+          const retryRes = await fetch("/api/getUser", {
+            credentials: "include",
+          });
+
+          if (retryRes.ok) {
+            const userData = await retryRes.json();
+            console.log("✅ Re-authenticated:", userData.uid);
+          } else {
+            console.warn("🚫 Still not authenticated after token refresh.");
+          }
         } else {
           console.warn("🚫 User not authenticated.");
         }
