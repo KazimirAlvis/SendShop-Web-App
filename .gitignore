@@ -45,3 +45,5 @@ next-env.d.ts
 .env.local
 .env.*.local
 
+# folders
+BU_unused_2025_05_11/
