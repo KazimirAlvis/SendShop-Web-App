@@ -4,98 +4,59 @@ import { useRouter } from "next/router";
 
 export default function Sidebar() {
   const router = useRouter();
-  const [showSettings, setShowSettings] = useState(
-    router.pathname.startsWith("/dashboard/settings")
-  );
-
-  const linkClass = "block px-3 py-2 rounded hover:bg-gray-100";
-  const activeClass = "bg-gray-200 font-semibold";
+  const [showSettings, setShowSettings] = useState(router.pathname.startsWith("/dashboard/settings"));
 
   return (
-    <aside className="w-60 h-screen bg-gray-50 border-r px-4 py-6">
-      <h3 className="text-xl font-bold mb-6">Seller Dashboard</h3>
-      <nav>
+    <aside className="w-60 bg-gray-100 h-screen flex flex-col justify-between p-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Seller Dashboard</h3>
         <ul className="space-y-2">
-          <li>
-            <Link
-              href="/dashboard"
-              className={`${linkClass} ${router.pathname === "/dashboard" ? activeClass : ""}`}
-            >
-              Overview
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/products"
-              className={`${linkClass} ${router.pathname.startsWith("/dashboard/products") ? activeClass : ""}`}
-            >
-              Products
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              href="/dashboard/orders"
-              className={`${linkClass} ${router.pathname.startsWith("/dashboard/orders") ? activeClass : ""}`}
-            >
-              Orders
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/dashboard/messages"
-              className={`${linkClass} ${router.pathname.startsWith("/dashboard/messages") ? activeClass : ""}`}
-            >
-              Messages
-            </Link>
-          </li>
+          <li><Link href="/dashboard" className="block hover:underline">Overview</Link></li>
+          <li><Link href="/dashboard/products" className="block hover:bg-gray-100">Products</Link></li>
+          <li><Link href="/dashboard/orders" className="block hover:underline">Orders</Link></li>
+          <li><Link href="/dashboard/messages" className="block hover:underline">Messages</Link></li>
           <li>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-between"
+              className="w-full text-left hover:underline"
             >
-              <span>⚙️ Settings</span>
-              <span>{showSettings ? "▲" : "▼"}</span>
+              ⚙️ Settings {showSettings ? "▲" : "▼"}
             </button>
             {showSettings && (
-              <ul className="pl-4 mt-2 space-y-1 text-sm">
-                <li>
-                  <Link
-                    href="/dashboard/settings/appearance"
-                    className={`${linkClass} ${router.pathname.includes("appearance") ? activeClass : ""}`}
-                  >
-                    Shop Appearance
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/dashboard/settings/password"
-                    className={`${linkClass} ${router.pathname.includes("password") ? activeClass : ""}`}
-                  >
-                    Change Password
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/dashboard/settings/seo"
-                    className={`${linkClass} ${router.pathname.includes("seo") ? activeClass : ""}`}
-                  >
-                    SEO Settings
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/dashboard/settings/payout"
-                    className={`${linkClass} ${router.pathname.includes("payout") ? activeClass : ""}`}
-                  >
-                    Payout Info
-                  </Link>
-                </li>
+              <ul className="ml-4 mt-2 space-y-1">             
+                <li><Link href="/dashboard/settings/appearance" className="block hover:underline">Shop Appearance</Link></li>
+                <li><Link href="/dashboard/settings/password" className="block hover:underline">Change Password</Link></li>
+                <li><Link href="/dashboard/settings/seo" className="block hover:underline">SEO Settings</Link></li>
+                <li><Link href="/dashboard/settings/payout" className="block hover:underline">Payout Info</Link></li>
               </ul>
             )}
           </li>
+          <li className="mt-4">
+  <button
+    onClick={() => {
+      const clientId = process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID;
+      const redirectUrl = `${window.location.origin}/api/printful/callback`;
+      window.location.href = `https://www.printful.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_url=${redirectUrl}`;
+    }}
+    className="text-sm text-blue-600 hover:underline"
+  >
+    🔗 Connect to Printful
+  </button>
+</li>
+
         </ul>
-      </nav>
+      </div>
+
+      {/* 👇 Sign Out Button at Bottom */}
+      <button
+        onClick={async () => {
+          await fetch("/api/logout");
+          window.location.href = "/login";
+        }}
+        className="mt-6 text-sm text-red-600 hover:underline"
+      >
+        🔓 Sign Out
+      </button>
     </aside>
   );
 }
