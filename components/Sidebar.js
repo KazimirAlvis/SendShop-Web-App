@@ -55,7 +55,7 @@ export default function Sidebar() {
         }}
         className="mt-6 text-sm text-red-600 hover:underline"
       >
-        🔓 Sign Out
+        Sign Out
       </button>
     </aside>
   );
