@@ -1,61 +1,101 @@
-"use client";
-
-import { useCart } from "@/components/CartContext";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/router";
 
-// ✅ Named export — only ONE default export allowed per file
-export function PrintfulConnect() {
-  const handleConnect = () => {
-    const clientId = process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_PRINTFUL_REDIRECT_URI;
-    const authUrl = `https://www.printful.com/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    window.location.href = authUrl;
-  };
-
-  return (
-    <button
-      onClick={handleConnect}
-      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-6"
-    >
-      Connect to Printful
-    </button>
-  );
-}
-
-// ✅ Default export — the only one
 export default function Sidebar() {
-  const { cartItems, cartTotal } = useCart();
+  const router = useRouter();
+  const [showSettings, setShowSettings] = useState(
+    router.pathname.startsWith("/dashboard/settings")
+  );
+
+  const linkClass = "block px-3 py-2 rounded hover:bg-gray-100";
+  const activeClass = "bg-gray-200 font-semibold";
 
   return (
-    <aside className="w-[180px] bg-white flex flex-col items-center pt-[60px] pr-[32px] pl-[32px]">
-      {/* Store Logo */}
-      <div className="w-[150px] h-[150px] overflow-hidden rounded-full mb-4">
-        <img
-          src="/images/PH-logo.png"
-          alt="Store Logo"
-          className="h-auto w-full"
-        />
-      </div>
+    <aside className="w-60 h-screen bg-gray-50 border-r px-4 py-6">
+      <h3 className="text-xl font-bold mb-6">Seller Dashboard</h3>
+      <nav>
+        <ul className="space-y-2">
+          <li>
+            <Link
+              href="/dashboard"
+              className={`${linkClass} ${router.pathname === "/dashboard" ? activeClass : ""}`}
+            >
+              Overview
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dashboard/products"
+              className={`${linkClass} ${router.pathname.startsWith("/dashboard/products") ? activeClass : ""}`}
+            >
+              Products
+            </Link>
+          </li>
 
-      {/* Cart Summary */}
-      <div className="text-center mt-6 font-[Open_Sans]">
-        <p className="text-[14px] text-gray-600 mb-1">
-          🛒 {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}
-        </p>
-        <p className="text-[16px] font-bold text-gray-800">${cartTotal}</p>
-      </div>
-
-      {/* Cart Link */}
-      <Link
-        href="/cart"
-        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center text-sm"
-      >
-        View Cart
-      </Link>
-
-      {/* Optional: Add Connect Button */}
-      <PrintfulConnect />
+          <li>
+            <Link
+              href="/dashboard/orders"
+              className={`${linkClass} ${router.pathname.startsWith("/dashboard/orders") ? activeClass : ""}`}
+            >
+              Orders
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dashboard/messages"
+              className={`${linkClass} ${router.pathname.startsWith("/dashboard/messages") ? activeClass : ""}`}
+            >
+              Messages
+            </Link>
+          </li>
+          <li>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded flex items-center justify-between"
+            >
+              <span>⚙️ Settings</span>
+              <span>{showSettings ? "▲" : "▼"}</span>
+            </button>
+            {showSettings && (
+              <ul className="pl-4 mt-2 space-y-1 text-sm">
+                <li>
+                  <Link
+                    href="/dashboard/settings/appearance"
+                    className={`${linkClass} ${router.pathname.includes("appearance") ? activeClass : ""}`}
+                  >
+                    Shop Appearance
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/dashboard/settings/password"
+                    className={`${linkClass} ${router.pathname.includes("password") ? activeClass : ""}`}
+                  >
+                    Change Password
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/dashboard/settings/seo"
+                    className={`${linkClass} ${router.pathname.includes("seo") ? activeClass : ""}`}
+                  >
+                    SEO Settings
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/dashboard/settings/payout"
+                    className={`${linkClass} ${router.pathname.includes("payout") ? activeClass : ""}`}
+                  >
+                    Payout Info
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </li>
+        </ul>
+      </nav>
     </aside>
   );
 }
