@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import Header from '@/components/Header';
 
 export default function Signup() {
   const router = useRouter();
@@ -45,7 +46,6 @@ export default function Signup() {
         createdAt: new Date(),
       });
 
-      // Wait for auth to stabilize before token fetch + redirect
       onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           const idToken = await firebaseUser.getIdToken();
@@ -72,37 +72,41 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow max-w-md w-full space-y-6">
-        <h1 className="text-2xl font-bold">Create Your SendShop Account</h1>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <Header user={null} />
 
-        {error && <p className="text-red-600">{error}</p>}
+      <main className="flex-grow flex items-center justify-center px-4">
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow max-w-md w-full space-y-6">
+          <h1 className="text-2xl font-bold">Create Your SendShop Account</h1>
 
-        <input name="name" placeholder="Full Name" required className="input" onChange={handleChange} />
-        <input name="email" type="email" placeholder="Email" required className="input" onChange={handleChange} />
-        <input name="password" type="password" placeholder="Password" required className="input" onChange={handleChange} />
-        <input name="storeName" placeholder="Store Name" required className="input" onChange={handleChange} />
-        <input name="phone" placeholder="Phone Number" required className="input" onChange={handleChange} />
-        <input name="address" placeholder="Address" required className="input" onChange={handleChange} />
+          {error && <p className="text-red-600">{error}</p>}
 
-        <label className="flex items-center">
-          <input type="checkbox" name="newsletter" className="mr-2" onChange={handleChange} />
-          Sign me up for SendShop email updates
-        </label>
+          <input name="name" placeholder="Full Name" required className="input" onChange={handleChange} />
+          <input name="email" type="email" placeholder="Email" required className="input" onChange={handleChange} />
+          <input name="password" type="password" placeholder="Password" required className="input" onChange={handleChange} />
+          <input name="storeName" placeholder="Store Name" required className="input" onChange={handleChange} />
+          <input name="phone" placeholder="Phone Number" required className="input" onChange={handleChange} />
+          <input name="address" placeholder="Address" required className="input" onChange={handleChange} />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700 transition"
-        >
-          {loading ? 'Signing up...' : 'Sign Up & Continue'}
-        </button>
+          <label className="flex items-center">
+            <input type="checkbox" name="newsletter" className="mr-2" onChange={handleChange} />
+            Sign me up for SendShop email updates
+          </label>
 
-        <p className="text-sm text-gray-500 text-center">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-500 hover:underline">Log in here</a>
-        </p>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700 transition"
+          >
+            {loading ? 'Signing up...' : 'Sign Up & Continue'}
+          </button>
+
+          <p className="text-sm text-gray-500 text-center">
+            Already have an account?{' '}
+            <a href="/login" className="text-blue-500 hover:underline">Log in here</a>
+          </p>
+        </form>
+      </main>
 
       <style jsx>{`
         .input {
