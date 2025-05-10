@@ -3,6 +3,12 @@ import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
 import cookie from "cookie";
 
 export default async function handler(req, res) {
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  // Parse auth token from cookies
   const { token } = cookie.parse(req.headers.cookie || "");
 
   if (!token) {
@@ -37,7 +43,7 @@ export default async function handler(req, res) {
       const ref = dbAdmin.collection("products").doc(item.id.toString());
       batch.set(ref, {
         ...item,
-        owner: uid,
+        sellerId: uid, // 🔄 Changed from `owner` to `sellerId` to match frontend
         syncedAt: new Date().toISOString(),
       });
     }

@@ -8,16 +8,8 @@ export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [userId, setUserId] = useState(null);
   const [syncing, setSyncing] = useState(false);
-
-  const fetchProducts = async (uid) => {
-    const q = query(collection(db, "products"), where("owner", "==", uid));
-    const querySnapshot = await getDocs(q);
-    const results = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setProducts(results);
-  };
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     const auth = getAuth();
@@ -28,37 +20,58 @@ export default function ProductList() {
     fetchProducts(user.uid);
   }, []);
 
+  const fetchProducts = async (uid) => {
+    const q = query(collection(db, "products"), where("sellerId", "==", uid));
+    const querySnapshot = await getDocs(q);
+    const results = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setProducts(results);
+  };
+
   const handleSync = async () => {
     setSyncing(true);
+    setError(null);
+    setSuccess(null);
+
     try {
       const res = await fetch("/api/printful-sync", {
         method: "POST",
       });
 
-      if (!res.ok) throw new Error("Sync failed");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.details || "Failed to sync");
+      }
+
       const data = await res.json();
-      console.log("✅ Synced:", data.count, "products");
-      await fetchProducts(userId);
+      setSuccess(`✅ Synced ${data.count} products`);
+      if (userId) {
+        await fetchProducts(userId);
+      }
     } catch (err) {
-      console.error("❌ Sync failed", err);
-      alert("Sync failed. Check console for details.");
+      setError(`❌ Sync failed: ${err.message}`);
     } finally {
       setSyncing(false);
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-5xl mx-auto p-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">📦 Your Products</h1>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          {syncing ? "Syncing..." : "🔄 Sync Products"}
+          {syncing ? "Syncing..." : "🔄 Sync Now"}
         </button>
       </div>
+
+      {error && <p className="text-red-600 mb-4">{error}</p>}
+      {success && <p className="text-green-600 mb-4">{success}</p>}
 
       <div className="overflow-x-auto">
         <table className="w-full table-auto border-collapse border rounded shadow">
