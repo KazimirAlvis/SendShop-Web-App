@@ -3,70 +3,55 @@ import { useEffect } from "react";
 import { CartProvider } from "@/components/CartContext";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
-import { auth } from "@/lib/firebaseClient";
-import { onAuthStateChanged, getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const isDashboard = router.pathname.startsWith("/dashboard");
 
   useEffect(() => {
-    const authInstance = getAuth();
+    const auth = getAuth();
 
-    const checkAndRefreshToken = async (user) => {
+    const refreshAndVerifyToken = async (user) => {
       try {
+        const freshToken = await user.getIdToken(true); // always refresh token
+        console.log("🔑 Got fresh token");
+
+        await fetch("/api/setToken", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: freshToken }),
+          credentials: "include",
+        });
+
+        console.log("✅ Token set. Waiting 750ms...");
+        await new Promise((resolve) => setTimeout(resolve, 750));
+
         const res = await fetch("/api/getUser", {
           credentials: "include",
         });
 
-        const data = await res.json();
-
-        if (res.status === 200) {
-          console.log("✅ Authenticated:", data.uid);
-        } else if (data.code === "token-expired") {
-          console.log("🔄 Token expired. Refreshing...");
-          const freshToken = await user.getIdToken(true);
-
-          await fetch("/api/setToken", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: freshToken }),
-            credentials: "include",
-          });
-
-          console.log("✅ Token refreshed. Waiting for cookie to apply...");
-
-          // ⏳ Wait for browser to register the new cookie
-          await new Promise(resolve => setTimeout(resolve, 750));
-
-          const retryRes = await fetch("/api/getUser", {
-            credentials: "include",
-          });
-
-          if (retryRes.ok) {
-            const userData = await retryRes.json();
-            console.log("✅ Re-authenticated:", userData.uid);
-          } else {
-            console.warn("🚫 Still not authenticated. Forcing reload.");
-            window.location.reload(); // 🔁 last-resort fix
-          }
+        if (res.ok) {
+          const data = await res.json();
+          console.log("✅ Verified user:", data.uid);
         } else {
-          console.warn("🚫 User not authenticated.");
+          console.warn("🚫 Still not authenticated. Forcing reload.");
+          window.location.reload();
         }
       } catch (err) {
-        console.error("❌ Error checking/refreshing token:", err);
+        console.error("❌ Token refresh failed:", err);
       }
     };
 
     let interval;
 
-    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("👤 Firebase user signed in:", user.email || user.uid);
-        checkAndRefreshToken(user);
+        refreshAndVerifyToken(user);
 
         interval = setInterval(() => {
-          checkAndRefreshToken(user);
+          refreshAndVerifyToken(user);
         }, 30 * 60 * 1000); // every 30 minutes
       } else {
         console.log("🚪 User signed out.");
