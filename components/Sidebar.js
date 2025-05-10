@@ -35,7 +35,7 @@ export default function Sidebar() {
   <button
     onClick={() => {
       const clientId = process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID;
-      const redirectUrl = `${window.location.origin}/api/printful/callback`;
+      const redirectUrl = `${window.location.origin}/oauth/callback`;
       window.location.href = `https://www.printful.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_url=${redirectUrl}`;
     }}
     className="text-sm text-blue-600 hover:underline"
