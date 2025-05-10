@@ -1,8 +1,5 @@
 // pages/api/printful-sync.js
 import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
-import { doc, setDoc } from "firebase/firestore";
-import { getApps, initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 import cookie from "cookie";
 
 export default async function handler(req, res) {
@@ -34,13 +31,18 @@ export default async function handler(req, res) {
       throw new Error("Unexpected API result");
     }
 
+    const batch = dbAdmin.batch();
+
     for (const item of result) {
-      await setDoc(doc(dbAdmin, "products", item.id.toString()), {
+      const ref = dbAdmin.collection("products").doc(item.id.toString());
+      batch.set(ref, {
         ...item,
         owner: uid,
         syncedAt: new Date().toISOString(),
       });
     }
+
+    await batch.commit();
 
     return res.status(200).json({ count: result.length });
   } catch (err) {

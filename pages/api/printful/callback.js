@@ -1,41 +1,37 @@
-// pages/api/printful/callback.js
+import { serialize } from 'cookie';
+import { getAccessToken } from '@/lib/printful'; // your helper
+
 export default async function handler(req, res) {
   const { code } = req.query;
 
   if (!code) {
-    return res.status(400).send("Missing code");
+    return res.status(400).json({ error: 'Missing code from Printful' });
   }
 
   try {
-    // Exchange code for token
-    const response = await fetch("https://www.printful.com/oauth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code,
-        client_id: process.env.PRINTFUL_CLIENT_ID,
-        client_secret: process.env.PRINTFUL_CLIENT_SECRET,
-        redirect_url: process.env.PRINTFUL_REDIRECT_URL,
-        grant_type: "authorization_code",
+    const { access_token, store } = await getAccessToken(code);
+
+    // Store token and store ID in cookies
+    res.setHeader('Set-Cookie', [
+      serialize('printful_token', access_token, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 30,
       }),
-    });
-
-    const data = await response.json();
-
-    if (!data.access_token) {
-      console.error("Printful token exchange failed:", data);
-      return res.status(500).send("Token exchange failed");
-    }
-
-    // Optionally store the token in a cookie
-    res.setHeader("Set-Cookie", [
-      `printful_token=${data.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+      serialize('printful_store_id', store.id.toString(), {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 30,
+      }),
     ]);
 
-    // Redirect to dashboard after successful connection
-    return res.redirect("/dashboard/products");
+    res.redirect('/dashboard/products'); // 👈 bring them to products page
   } catch (err) {
-    console.error("OAuth callback error:", err);
-    return res.status(500).send("Callback error");
+    console.error('Printful OAuth Error:', err);
+    res.status(500).json({ error: 'Failed to authenticate with Printful' });
   }
 }

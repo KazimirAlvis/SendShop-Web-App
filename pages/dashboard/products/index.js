@@ -1,3 +1,4 @@
+// pages/dashboard/products/index.js
 import { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -6,6 +7,17 @@ import { db } from "@/lib/firebaseClient";
 export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const fetchProducts = async (uid) => {
+    const q = query(collection(db, "products"), where("owner", "==", uid));
+    const querySnapshot = await getDocs(q);
+    const results = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setProducts(results);
+  };
 
   useEffect(() => {
     const auth = getAuth();
@@ -13,26 +25,40 @@ export default function ProductList() {
     if (!user) return;
 
     setUserId(user.uid);
-
-    const fetchProducts = async () => {
-      const q = query(
-        collection(db, "products"),
-        where("sellerId", "==", user.uid)
-      );
-      const querySnapshot = await getDocs(q);
-      const results = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(results);
-    };
-
-    fetchProducts();
+    fetchProducts(user.uid);
   }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/printful-sync", {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Sync failed");
+      const data = await res.json();
+      console.log("✅ Synced:", data.count, "products");
+      await fetchProducts(userId);
+    } catch (err) {
+      console.error("❌ Sync failed", err);
+      alert("Sync failed. Check console for details.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">📦 Your Products</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">📦 Your Products</h1>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
+        >
+          {syncing ? "Syncing..." : "🔄 Sync Products"}
+        </button>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full table-auto border-collapse border rounded shadow">

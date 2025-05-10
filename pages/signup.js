@@ -6,7 +6,6 @@ import { auth, db } from '../lib/firebase';
 import Header from '@/components/Header';
 import Link from "next/link";
 
-
 export default function Signup() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -37,14 +36,22 @@ export default function Signup() {
 
     try {
       const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const uid = userCred.user.uid;
 
-      await setDoc(doc(db, 'users', userCred.user.uid), {
+      // ✅ Create user doc
+      await setDoc(doc(db, 'users', uid), {
         name: form.name,
         email: form.email,
         storeName: form.storeName,
         phone: form.phone,
         address: form.address,
         newsletter: form.newsletter,
+        createdAt: new Date(),
+      });
+
+      // ✅ Also create store doc for this seller
+      await setDoc(doc(db, 'shops', uid), {
+        storeName: form.storeName,
         createdAt: new Date(),
       });
 
@@ -106,7 +113,6 @@ export default function Signup() {
           <p className="text-sm text-gray-500 text-center">
             Already have an account?{' '}
             <Link href="/login" className="text-blue-500 hover:underline">Log in here</Link>
-
           </p>
         </form>
       </main>
