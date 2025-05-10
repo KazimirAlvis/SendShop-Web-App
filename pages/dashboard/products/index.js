@@ -21,7 +21,7 @@ export default function ProductList() {
   }, []);
 
   const fetchProducts = async (uid) => {
-    const q = query(collection(db, "products"), where("sellerId", "==", uid));
+    const q = query(collection(db, "products"), where("owner", "==", uid));
     const querySnapshot = await getDocs(q);
     const results = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -41,8 +41,14 @@ export default function ProductList() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.details || "Failed to sync");
+        let errText = "Failed to sync";
+        try {
+          const err = await res.json();
+          errText = err.details || err.error || errText;
+        } catch (_) {
+          // response wasn't JSON or was empty
+        }
+        throw new Error(errText);
       }
 
       const data = await res.json();
@@ -86,12 +92,12 @@ export default function ProductList() {
           <tbody>
             {products.map((p) => (
               <tr key={p.id} className="border-t hover:bg-gray-50">
-                <td className="p-2 border">{p.title}</td>
-                <td className="p-2 border">${p.price}</td>
-                <td className="p-2 border">{p.description}</td>
+                <td className="p-2 border">{p.name || p.title}</td>
+                <td className="p-2 border">${p.price || "N/A"}</td>
+                <td className="p-2 border">{p.description || "—"}</td>
                 <td className="p-2 border text-blue-600 underline break-all">
-                  <a href={p.imageUrl} target="_blank" rel="noopener noreferrer">
-                    {p.imageUrl}
+                  <a href={p.thumbnail_url || p.imageUrl} target="_blank" rel="noopener noreferrer">
+                    {p.thumbnail_url || p.imageUrl || "No Image"}
                   </a>
                 </td>
               </tr>
