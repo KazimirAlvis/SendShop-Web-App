@@ -36,8 +36,8 @@ export default function App({ Component, pageProps }) {
 
           console.log("✅ Token refreshed. Waiting for cookie to apply...");
 
-          // ✅ Give browser time to apply Set-Cookie header before calling getUser again
-          await new Promise(resolve => setTimeout(resolve, 250));
+          // ⏳ Wait for browser to register the new cookie
+          await new Promise(resolve => setTimeout(resolve, 750));
 
           const retryRes = await fetch("/api/getUser", {
             credentials: "include",
@@ -47,7 +47,8 @@ export default function App({ Component, pageProps }) {
             const userData = await retryRes.json();
             console.log("✅ Re-authenticated:", userData.uid);
           } else {
-            console.warn("🚫 Still not authenticated after token refresh.");
+            console.warn("🚫 Still not authenticated. Forcing reload.");
+            window.location.reload(); // 🔁 last-resort fix
           }
         } else {
           console.warn("🚫 User not authenticated.");
