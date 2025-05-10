@@ -1,7 +1,8 @@
 import { serialize } from "cookie";
 import { exchangeCodeForToken, getStoreInfo } from "@/lib/printful";
-import { db } from "@/lib/firebaseAdmin";
-import { doc, setDoc } from "firebase/firestore";
+import { getFirestore } from "firebase-admin/firestore";
+
+const adminDb = getFirestore();
 
 export default async function handler(req, res) {
   const { code } = req.query;
@@ -30,9 +31,8 @@ export default async function handler(req, res) {
     const storeId = store.id;
 
     // Step 3: Write store to Firebase
-    const storeRef = doc(db, "printfulStores", String(storeId));
-    await setDoc(
-      storeRef,
+    const storeRef = adminDb.collection("printfulStores").doc(String(storeId));
+    await storeRef.set(
       {
         name: store.name,
         type: store.type,
