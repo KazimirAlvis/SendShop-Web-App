@@ -15,7 +15,10 @@ export default function App({ Component, pageProps }) {
 
     const checkAndRefreshToken = async (user) => {
       try {
-        const res = await fetch("/api/getUser");
+        const res = await fetch("/api/getUser", {
+          credentials: "include", // ✅ Required to send token cookie
+        });
+
         const data = await res.json();
 
         if (res.status === 200) {
