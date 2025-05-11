@@ -53,8 +53,10 @@ export default async function handler(req, res) {
   }
 
   if (!uid) {
+    console.error("UID is not available after decoding the token.");
     return res.status(401).json({ error: "User ID is not available" });
   }
+  console.log("UID is available:", uid);
 
   try {
     // ✅ Fetch products from Printful API
@@ -104,6 +106,7 @@ export default async function handler(req, res) {
 
       // ✅ Map Printful API fields to Firestore fields
       const ref = dbAdmin.collection("products").doc(item.id.toString());
+      console.log("Writing product to Firestore with UID:", uid);
       batch.set(ref, {
         name: item.name || "Untitled Product", // Use `name` or fallback
         price, // Calculated price based on variants
@@ -117,8 +120,13 @@ export default async function handler(req, res) {
       syncedProductIds.push(item.id);
     }
 
-    await batch.commit();
-    console.log("Products synced successfully:", syncedProductIds);
+    try {
+      await batch.commit();
+      console.log("Products synced successfully:", syncedProductIds);
+    } catch (err) {
+      console.error("Error writing to Firestore:", err);
+      return res.status(500).json({ error: "Failed to write to Firestore", details: err.message });
+    }
 
     // ✅ Return success response
     return res.status(200).json({
