@@ -19,15 +19,21 @@ export default function ProductList() {
     fetchProducts(user.uid);
   }, []);
 
-  const fetchProducts = async (uid) => {
-    const q = query(collection(db, "products"), where("sellerId", "==", uid)); // ✅ fixed
-    const querySnapshot = await getDocs(q);
-    const results = querySnapshot.docs.map(doc => ({
+const fetchProducts = async (uid) => {
+  const q = query(collection(db, "products"), where("sellerId", "==", uid));
+  const querySnapshot = await getDocs(q);
+  const results = querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
       id: doc.id,
-      ...doc.data(),
-    }));
-    setProducts(results);
-  };
+      name: data.name || "Untitled Product",
+      price: data.price || 0, // Default to 0 if price is missing
+      description: data.description || "No description available",
+      thumbnail_url: data.thumbnail_url || "", // Ensure thumbnail_url is always present
+    };
+  });
+  setProducts(results);
+};
 
   const handleSync = async () => {
     setSyncing(true);
@@ -81,39 +87,29 @@ export default function ProductList() {
       {success && <p className="text-green-600 mb-4">{success}</p>}
 
       <div className="overflow-x-auto">
-        <table className="w-full table-auto border-collapse border rounded shadow">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="text-left p-2 border">Title</th>
-              <th className="text-left p-2 border">Price</th>
-              <th className="text-left p-2 border">Description</th>
-              <th className="text-left p-2 border">Image URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-t hover:bg-gray-50">
-                <td className="p-2 border">{p.name || p.title}</td>
-                <td className="p-2 border">
-                  {typeof p.price === "number" ? `$${p.price.toFixed(2)}` : "N/A"}
-                </td>
-                <td className="p-2 border">{p.description || "—"}</td>
-                <td className="p-2 border text-blue-600 underline break-all">
-                  <a href={p.thumbnail_url || p.imageUrl} target="_blank" rel="noopener noreferrer">
-                    {p.thumbnail_url || p.imageUrl || "No Image"}
-                  </a>
-                </td>
-              </tr>
-            ))}
-            {products.length === 0 && (
-              <tr>
-                <td colSpan="4" className="p-4 text-center text-gray-500">
-                  No products found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <tbody>
+  {products.map((p) => (
+    <tr key={p.id} className="border-t hover:bg-gray-50">
+      <td className="p-2 border">{p.name || "No Name"}</td>
+      <td className="p-2 border">
+        {typeof p.price === "number" ? `$${p.price.toFixed(2)}` : "N/A"}
+      </td>
+      <td className="p-2 border">{p.description || "No Description"}</td>
+      <td className="p-2 border text-blue-600 underline break-all">
+        <a href={p.thumbnail_url} target="_blank" rel="noopener noreferrer">
+          {p.thumbnail_url ? "View Image" : "No Image"}
+        </a>
+      </td>
+    </tr>
+  ))}
+  {products.length === 0 && (
+    <tr>
+      <td colSpan="4" className="p-4 text-center text-gray-500">
+        No products found.
+      </td>
+    </tr>
+  )}
+</tbody>
       </div>
     </div>
   );

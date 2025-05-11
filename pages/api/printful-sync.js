@@ -50,10 +50,25 @@ export default async function handler(req, res) {
         continue;
       }
 
+      // ✅ Calculate price based on shirt size (variants)
+      let price = 0;
+      if (item.variants && Array.isArray(item.variants)) {
+        // Example: Use the price of the first variant as the base price
+        const firstVariant = item.variants[0];
+        price = firstVariant.retail_price || 0; // Adjust this logic as needed
+      }
+
+      // ✅ Map Printful API fields to Firestore fields
       const ref = dbAdmin.collection("products").doc(item.id.toString());
       batch.set(ref, {
-        ...item,
-        syncedAt: new Date().toISOString(),
+        name: item.name || "Untitled Product", // Use `name` or fallback
+        price, // Calculated price based on variants
+        description: item.description || "No description available", // Map `description`
+        thumbnail_url: item.thumbnail_url || "", // Map `thumbnail_url`
+        external_id: item.external_id || "", // Include `external_id`
+        synced: item.variants ? item.variants.length : 0, // Count of variants
+        syncedAt: new Date().toISOString(), // Timestamp for sync
+        sellerId: uid, // Ensure `sellerId` is set correctly
       });
       syncedProductIds.push(item.id);
     }
