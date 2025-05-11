@@ -1,6 +1,8 @@
 import { serialize } from "cookie";
 import { exchangeCodeForToken, getStoreInfo } from "@/lib/printful";
-import { getFirestore } from "firebase-admin/firestore";
+import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
+
+
 
 const adminDb = getFirestore();
 
