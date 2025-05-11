@@ -40,15 +40,29 @@ const fetchProducts = async (uid) => {
     setError(null);
     setSuccess(null);
 
+    if (!userId) {
+      setError("User ID is not available. Please log in again.");
+      setSyncing(false);
+      return;
+    }
+
     try {
+      console.log("Sending sync request...");
       const res = await fetch("/api/printful-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include", // ✅ Ensure cookies are sent
       });
 
+      console.log("Sync response status:", res.status);
+
       if (!res.ok) {
-        const error = await res.json();
+        let error;
+        try {
+          error = await res.json();
+        } catch {
+          throw new Error("Failed to parse server response");
+        }
         throw new Error(error.details || error.error || "Failed to sync");
       }
 
@@ -58,7 +72,7 @@ const fetchProducts = async (uid) => {
         await fetchProducts(userId);
       }
     } catch (err) {
-      setError(`❌ Sync failed: ${err.message}`);
+      setError(`❌ Sync failed: ${err.message || "Network error"}`);
     } finally {
       setSyncing(false);
     }

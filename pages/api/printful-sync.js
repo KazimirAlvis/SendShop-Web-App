@@ -11,8 +11,10 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 export default async function handler(req, res) {
-  // ✅ Allow POST only
+  console.log("Request method:", req.method); // Debug log
+
   if (req.method !== "POST") {
+    console.error("Method not allowed:", req.method); // Debug log
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
