@@ -14,10 +14,18 @@ export default async function handler(req, res) {
 
   try {
     const decoded = await authAdmin.verifyIdToken(token);
+    console.log("Decoded UID:", decoded.uid);
+  } catch (err) {
+    console.error("Error verifying token:", err);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+
+  try {
     const docRef = dbAdmin.collection("shops").doc(decoded.uid);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
+      console.error("Shop not found for UID:", decoded.uid);
       return res.status(404).json({ error: "Shop not found" });
     }
 

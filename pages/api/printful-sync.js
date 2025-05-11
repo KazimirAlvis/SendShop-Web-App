@@ -1,6 +1,9 @@
-import { dbAdmin, authAdmin } from "@/lib/firebaseAdmin"; // Ensure authAdmin is imported
+import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin"; // Ensure authAdmin is imported
 import { parse } from "cookie";
 import { getAuth } from "firebase/auth";
+
+console.log("authAdmin initialized:", !!authAdmin);
+console.log("dbAdmin initialized:", !!dbAdmin);
 
 const auth = getAuth();
 auth.onAuthStateChanged(async (user) => {
