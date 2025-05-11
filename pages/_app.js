@@ -13,7 +13,7 @@ export default function App({ Component, pageProps }) {
   const isDashboard = router.pathname.startsWith("/dashboard");
 
   useEffect(() => {
-    const auth = getAuth();
+
 
     const refreshAndVerifyToken = async (user) => {
       try {
