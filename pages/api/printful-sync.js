@@ -27,6 +27,7 @@ export default async function handler(req, res) {
 
   // ✅ Parse the correct tokens from cookies
   const { printful_token, firebase_token } = parse(cookies);
+  console.log("Parsed tokens:", { printful_token, firebase_token });
 
   if (!printful_token) {
     return res.status(401).json({ error: "No Printful token found in cookie" });
@@ -48,19 +49,27 @@ export default async function handler(req, res) {
     }
 
     // ✅ Fetch products from Printful API
-    const resp = await fetch("https://api.printful.com/store/products", {
-      headers: {
-        Authorization: `Bearer ${printful_token}`,
-      },
-    });
+    try {
+      const resp = await fetch("https://api.printful.com/store/products", {
+        headers: {
+          Authorization: `Bearer ${printful_token}`,
+        },
+      });
 
-    // ✅ Handle API errors
-    if (!resp.ok) {
-      const error = await resp.json();
-      throw new Error(`Printful API error: ${error.message || resp.statusText}`);
+      console.log("Printful API response status:", resp.status);
+
+      if (!resp.ok) {
+        const error = await resp.json();
+        console.error("Printful API error:", error);
+        throw new Error(`Printful API error: ${error.message || resp.statusText}`);
+      }
+
+      const { result } = await resp.json();
+      console.log("Printful API result:", result);
+    } catch (err) {
+      console.error("❌ Sync failed:", err);
+      return res.status(500).json({ error: "Sync failed", details: err.message });
     }
-
-    const { result } = await resp.json();
 
     // ✅ Validate API response
     if (!Array.isArray(result)) {
