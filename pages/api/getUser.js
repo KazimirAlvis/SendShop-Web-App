@@ -1,45 +1,24 @@
 import { authAdmin } from "@/lib/firebaseAdmin";
+import { parse } from "cookie";
 
 export default async function handler(req, res) {
-  // Log all incoming cookies
-  console.log("🍪 Incoming cookies:", req.headers.cookie);
-
-  // Check for token cookie
-  const token = req.cookies?.token;
-
-  if (!token) {
-    console.warn("⚠️ No token cookie found in request");
-    return res.status(401).json({ error: "No token provided" });
-  }
-
   try {
-    console.log("🔐 Verifying token:", token.slice(0, 20) + "...");
+    const cookies = req.headers.cookie;
+    console.log("Received cookies:", cookies);
 
-    const decoded = await authAdmin.verifyIdToken(token);
+    const { firebase_token } = parse(cookies);
+    console.log("Parsed firebase_token:", firebase_token);
 
-    return res.status(200).json({
-      uid: decoded.uid,
-      email: decoded.email,
-      provider: decoded.firebase?.sign_in_provider || "unknown",
-    });
-  } catch (err) {
-    console.error("🔥 Firebase Admin Error:", {
-      message: err.message,
-      code: err.code,
-      name: err.name,
-    });
-
-    if (err.code === "auth/id-token-expired") {
-      return res.status(401).json({
-        error: "Token expired. Please refresh the token.",
-        code: "token-expired",
-      });
+    if (!firebase_token) {
+      return res.status(401).json({ error: "No Firebase token found in cookie" });
     }
 
-    return res.status(500).json({
-      error: "Internal Server Error",
-      code: err.code || "unknown",
-      message: err.message,
-    });
+    const decodedToken = await authAdmin.verifyIdToken(firebase_token);
+    console.log("Decoded Firebase token:", decodedToken);
+
+    return res.status(200).json({ uid: decodedToken.uid });
+  } catch (err) {
+    console.error("Error in /api/getUser:", err);
+    return res.status(401).json({ error: "Invalid Firebase token" });
   }
 }
