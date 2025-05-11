@@ -2,10 +2,6 @@ import { serialize } from "cookie";
 import { exchangeCodeForToken, getStoreInfo } from "@/lib/printful";
 import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
 
-
-
-const adminDb = getFirestore();
-
 export default async function handler(req, res) {
   const { code } = req.query;
 
@@ -32,8 +28,8 @@ export default async function handler(req, res) {
 
     const storeId = store.id;
 
-    // Step 3: Write store to Firebase
-    const storeRef = adminDb.collection("printfulStores").doc(String(storeId));
+    // Step 3: Write store to Firebase using dbAdmin
+    const storeRef = dbAdmin.collection("printfulStores").doc(String(storeId));
     await storeRef.set(
       {
         name: store.name,
@@ -70,6 +66,10 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error("❌ OAuth callback failed:", err);
-    return res.status(500).json({ error: "Failed to authenticate with Printful" });
+    return res.status(500).json({
+      error: "Failed to authenticate with Printful",
+      message: err.message,
+      stack: err.stack,
+    });
   }
 }
