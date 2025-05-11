@@ -1,4 +1,4 @@
-import { dbAdmin } from "@/lib/firebaseAdmin";
+import { dbAdmin, authAdmin } from "@/lib/firebaseAdmin"; // Ensure authAdmin is imported
 import { parse } from "cookie";
 
 export default async function handler(req, res) {
@@ -12,14 +12,22 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "No cookie header found" });
   }
 
-  // ✅ Parse the correct token from cookies
-  const { printful_token } = parse(cookies);
+  // ✅ Parse the correct tokens from cookies
+  const { printful_token, firebase_token } = parse(cookies);
 
   if (!printful_token) {
     return res.status(401).json({ error: "No Printful token found in cookie" });
   }
 
+  if (!firebase_token) {
+    return res.status(401).json({ error: "No Firebase token found in cookie" });
+  }
+
   try {
+    // ✅ Verify Firebase token to get the user's UID
+    const decodedToken = await authAdmin.verifyIdToken(firebase_token);
+    const uid = decodedToken.uid;
+
     // ✅ Fetch products from Printful API
     const resp = await fetch("https://api.printful.com/store/products", {
       headers: {
@@ -68,7 +76,7 @@ export default async function handler(req, res) {
         external_id: item.external_id || "", // Include `external_id`
         synced: item.variants ? item.variants.length : 0, // Count of variants
         syncedAt: new Date().toISOString(), // Timestamp for sync
-        sellerId: uid, // Ensure `sellerId` is set correctly
+        sellerId: uid, // Use the verified UID
       });
       syncedProductIds.push(item.id);
     }
