@@ -1,5 +1,14 @@
 import { dbAdmin, authAdmin } from "@/lib/firebaseAdmin"; // Ensure authAdmin is imported
 import { parse } from "cookie";
+import { getAuth } from "firebase/auth";
+
+const auth = getAuth();
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    const token = await user.getIdToken();
+    document.cookie = `firebase_token=${token}; path=/;`;
+  }
+});
 
 export default async function handler(req, res) {
   // ✅ Allow POST only
@@ -8,6 +17,8 @@ export default async function handler(req, res) {
   }
 
   const cookies = req.headers.cookie;
+  console.log("Received cookies:", cookies);
+
   if (!cookies) {
     return res.status(401).json({ error: "No cookie header found" });
   }
@@ -25,8 +36,14 @@ export default async function handler(req, res) {
 
   try {
     // ✅ Verify Firebase token to get the user's UID
-    const decodedToken = await authAdmin.verifyIdToken(firebase_token);
-    const uid = decodedToken.uid;
+    try {
+      const decodedToken = await authAdmin.verifyIdToken(firebase_token);
+      console.log("Decoded Firebase token:", decodedToken);
+      const uid = decodedToken.uid;
+    } catch (err) {
+      console.error("Failed to verify Firebase token:", err);
+      return res.status(401).json({ error: "Invalid Firebase token" });
+    }
 
     // ✅ Fetch products from Printful API
     const resp = await fetch("https://api.printful.com/store/products", {
@@ -94,3 +111,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Sync failed", details: err.message });
   }
 }
+

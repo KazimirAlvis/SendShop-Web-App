@@ -44,18 +44,12 @@ const fetchProducts = async (uid) => {
       const res = await fetch("/api/printful-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ critical to send auth cookie
+        credentials: "include", // ✅ Ensure cookies are sent
       });
 
       if (!res.ok) {
-        let errText = "Failed to sync";
-        try {
-          const err = await res.json();
-          errText = err.details || err.error || errText;
-        } catch (_) {
-          // response wasn't JSON or was empty
-        }
-        throw new Error(errText);
+        const error = await res.json();
+        throw new Error(error.details || error.error || "Failed to sync");
       }
 
       const data = await res.json();
