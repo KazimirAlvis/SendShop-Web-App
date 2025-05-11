@@ -40,17 +40,23 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "No Firebase token found in cookie" });
   }
 
-  try {
-    // ✅ Verify Firebase token to get the user's UID
-    try {
-      const decodedToken = await authAdmin.verifyIdToken(firebase_token);
-      console.log("Decoded Firebase token:", decodedToken);
-      const uid = decodedToken.uid;
-    } catch (err) {
-      console.error("Failed to verify Firebase token:", err);
-      return res.status(401).json({ error: "Invalid Firebase token" });
-    }
+  let uid; // Declare uid in the outer scope
 
+  try {
+    const decodedToken = await authAdmin.verifyIdToken(firebase_token);
+    console.log("Decoded Firebase token:", decodedToken);
+    uid = decodedToken.uid; // Assign uid here
+    console.log("Decoded UID:", uid);
+  } catch (err) {
+    console.error("Failed to verify Firebase token:", err);
+    return res.status(401).json({ error: "Invalid Firebase token" });
+  }
+
+  if (!uid) {
+    return res.status(401).json({ error: "User ID is not available" });
+  }
+
+  try {
     // ✅ Fetch products from Printful API
     try {
       const resp = await fetch("https://api.printful.com/store/products", {
@@ -69,14 +75,13 @@ export default async function handler(req, res) {
 
       const { result } = await resp.json();
       console.log("Printful API result:", result);
+
+      if (!Array.isArray(result)) {
+        throw new Error("Unexpected API result");
+      }
     } catch (err) {
       console.error("❌ Sync failed:", err);
       return res.status(500).json({ error: "Sync failed", details: err.message });
-    }
-
-    // ✅ Validate API response
-    if (!Array.isArray(result)) {
-      throw new Error("Unexpected API result");
     }
 
     // ✅ Write products to Firestore
@@ -113,6 +118,7 @@ export default async function handler(req, res) {
     }
 
     await batch.commit();
+    console.log("Products synced successfully:", syncedProductIds);
 
     // ✅ Return success response
     return res.status(200).json({
