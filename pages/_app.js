@@ -39,7 +39,14 @@ export default function App({ Component, pageProps }) {
           console.log("✅ Verified user:", data.uid);
         } else {
           console.warn("🚫 Still not authenticated. Forcing reload.");
-          window.location.reload();
+
+          // Prevent infinite reloads
+          if (!localStorage.getItem("reloadAttempted")) {
+            localStorage.setItem("reloadAttempted", "true");
+            window.location.reload();
+          } else {
+            console.error("Reload already attempted. Stopping further reloads.");
+          }
         }
       } catch (err) {
         console.error("❌ Token refresh failed:", err);
