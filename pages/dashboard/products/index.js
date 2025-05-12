@@ -10,10 +10,26 @@ export default function ProductList({ isAuthenticated }) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [hasValidPrintfulToken, setHasValidPrintfulToken] = useState(false);
   const router = useRouter();
   const auth = getAuth();
 
-  // Combine auth and products fetch in one useEffect
+  // Check Printful token
+  const validatePrintfulToken = () => {
+    const printfulToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('printful_token='))
+      ?.split('=')[1];
+
+    if (printfulToken) {
+      setHasValidPrintfulToken(true);
+      return true;
+    }
+    setHasValidPrintfulToken(false);
+    return false;
+  };
+
+  // Auth and token check
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -22,15 +38,14 @@ export default function ProductList({ isAuthenticated }) {
       }
 
       setUserId(user.uid);
-
-      // Only fetch products if we have a Printful token
-      const printfulToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('printful_token='))
-        ?.split('=')[1];
-
-      if (printfulToken) {
+      const hasPrintfulToken = validatePrintfulToken();
+      
+      if (hasPrintfulToken) {
+        console.log("Found Printful token, fetching products...");
         await fetchProducts(user.uid);
+      } else {
+        console.log("No Printful token found");
+        setError("Please connect your Printful account first");
       }
     });
 
@@ -73,18 +88,13 @@ export default function ProductList({ isAuthenticated }) {
         throw new Error("Please sign in to sync products");
       }
 
-      // Check for Printful token
-      const printfulToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('printful_token='))
-        ?.split('=')[1];
-
-      if (!printfulToken) {
+      const hasPrintfulToken = validatePrintfulToken();
+      if (!hasPrintfulToken) {
         throw new Error("Please connect your Printful account first");
       }
 
       const token = await user.getIdToken(true);
-      console.log("Starting sync with tokens...");
+      console.log("Starting sync process...");
       
       const res = await fetch("/api/printful-sync", {
         method: "POST",
