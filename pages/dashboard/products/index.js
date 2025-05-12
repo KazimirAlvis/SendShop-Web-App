@@ -14,26 +14,45 @@ export default function ProductList({ isAuthenticated }) {
   const router = useRouter();
   const auth = getAuth();
 
-  // Check Printful token with better logging
   const validatePrintfulToken = () => {
-    console.log("Checking cookies:", document.cookie); // Debug log
+    // Use parseCookies helper function
+    const parseCookies = () => {
+      const cookies = {};
+      if (typeof document === 'undefined') return cookies;
+      
+      const cookieStr = document.cookie;
+      if (!cookieStr) return cookies;
 
+      cookieStr.split(';').forEach(cookie => {
+        const [key, value] = cookie.split('=').map(c => c.trim());
+        if (key && value) cookies[key] = value;
+      });
+      
+      return cookies;
+    };
+
+    console.log("Starting token validation...");
+    
     if (typeof document === 'undefined') {
       console.log("Document not available yet");
       return false;
     }
 
-    const cookies = document.cookie.split('; ');
-    console.log("All cookies:", cookies); // Debug log
+    // Get all cookies and log them
+    const allCookies = parseCookies();
+    console.log("Parsed cookies:", allCookies);
 
-    const printfulToken = cookies.find(row => row.startsWith('printful_token='))?.split('=')[1];
-    console.log("Found printful token:", printfulToken ? "Yes" : "No"); // Debug log
+    // Check specifically for printful_token
+    const printfulToken = allCookies['printful_token'];
+    console.log("Printful token value:", printfulToken);
 
     if (printfulToken) {
+      console.log("Valid Printful token found");
       setHasValidPrintfulToken(true);
       return true;
     }
     
+    console.log("No valid Printful token found");
     setHasValidPrintfulToken(false);
     return false;
   };
@@ -46,8 +65,8 @@ export default function ProductList({ isAuthenticated }) {
         return;
       }
 
-      // Add small delay to ensure cookies are available
-      setTimeout(() => {
+      // Increase timeout to ensure cookies are properly set
+      const timeoutId = setTimeout(() => {
         setUserId(user.uid);
         const hasPrintfulToken = validatePrintfulToken();
         
@@ -55,10 +74,14 @@ export default function ProductList({ isAuthenticated }) {
           console.log("Found Printful token, fetching products...");
           fetchProducts(user.uid);
         } else {
-          console.log("No Printful token found in cookies:", document.cookie);
+          console.log("No Printful token found, checking raw cookie:", document.cookie);
           setError("Please connect your Printful account first");
         }
-      }, 100);
+      }, 500); // Increased from 100ms to 500ms
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
     });
 
     return () => unsubscribe();
@@ -156,6 +179,19 @@ export default function ProductList({ isAuthenticated }) {
             </span>
           ) : '🔄 Sync Now'}
         </button>
+
+            // Add this to your return statement, just below the Sync Now button
+            <button
+              onClick={() => {
+                console.log("Manual cookie check:");
+                console.log("Raw cookies:", document.cookie);
+                console.log("Validation result:", validatePrintfulToken());
+              }}
+              className="ml-2 px-4 py-2 text-sm text-gray-600 border rounded"
+            >
+              Debug Cookies
+            </button>
+
       </div>
 
       {error && (
