@@ -2,22 +2,29 @@ import { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebaseClient";
+import { useRouter } from "next/router";
 
-export default function ProductList() {
+export default function ProductList({ isAuthenticated }) {
   const [products, setProducts] = useState([]);
   const [userId, setUserId] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const router = useRouter();
+  const auth = getAuth(); // Initialize auth here
 
   useEffect(() => {
-    const auth = getAuth();
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
     const user = auth.currentUser;
     if (!user) return;
 
     setUserId(user.uid);
     fetchProducts(user.uid);
-  }, [auth.currentUser]); // Add the missing dependency
+  }, [auth.currentUser, isAuthenticated, router]);
 
   const fetchProducts = async (uid) => {
     try {
