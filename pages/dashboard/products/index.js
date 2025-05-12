@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebaseClient";
 import { useRouter } from "next/router";
@@ -11,35 +11,37 @@ export default function ProductList({ isAuthenticated }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const router = useRouter();
-  const auth = getAuth(); // Initialize auth here
+  const auth = getAuth();
 
+  // Add auth state listener
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setUserId(user.uid);
+    });
 
-    const auth = getAuth();
-    const user = auth.currentUser;
-    
-    if (!user) {
-      console.error("No authenticated user found");
-      return;
-    }
+    return () => unsubscribe();
+  }, [auth, router]);
 
-    // Check for Printful token on component mount
+  // Handle Printful token and products fetch
+  useEffect(() => {
+    if (!userId || !isAuthenticated) return;
+
     const printfulToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('printful_token='))
       ?.split('=')[1];
 
     if (!printfulToken) {
-      console.log("No Printful token found");
+      setError("Please connect your Printful account first");
+      return;
     }
 
-    setUserId(user.uid);
-    fetchProducts(user.uid);
-  }, [auth.currentUser, isAuthenticated, router]);
+    fetchProducts(userId);
+  }, [userId, isAuthenticated]);
 
   const fetchProducts = async (uid) => {
     try {
@@ -70,30 +72,23 @@ export default function ProductList({ isAuthenticated }) {
     setError(null);
     setSuccess(null);
 
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      setError("Please sign in to sync products");
-      setSyncing(false);
-      return;
-    }
-
-    // Updated Printful token check
-    const printfulToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('printful_token='))
-      ?.split('=')[1];
-
-    if (!printfulToken) {
-      setError("Please connect your Printful account first");
-      setSyncing(false);
-      return;
-    }
-
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("Please sign in to sync products");
+      }
+
+      const printfulToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('printful_token='))
+        ?.split('=')[1];
+
+      if (!printfulToken) {
+        throw new Error("Please connect your Printful account first");
+      }
+
       const token = await user.getIdToken(true);
-      console.log("Sending sync request...");
+      console.log("Starting sync with tokens...");
       
       const res = await fetch("/api/printful-sync", {
         method: "POST",
@@ -105,16 +100,16 @@ export default function ProductList({ isAuthenticated }) {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to sync products");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to sync products");
       }
 
       const data = await res.json();
-      setSuccess(`✅ Synced ${data.count} products`);
+      setSuccess(`✅ Successfully synced ${data.count} products`);
       await fetchProducts(user.uid);
     } catch (err) {
-      setError(`❌ Sync failed: ${err.message}`);
       console.error("Sync error:", err);
+      setError(err.message);
     } finally {
       setSyncing(false);
     }

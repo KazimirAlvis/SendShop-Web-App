@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-export default function Callback() {
+export default function PrintfulCallback() {
   const router = useRouter();
   const [status, setStatus] = useState('Connecting to Printful...');
   const [error, setError] = useState(null);
