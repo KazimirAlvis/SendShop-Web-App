@@ -3,7 +3,15 @@ import { serialize } from "cookie";
 export default async function handler(req, res) {
   const { code } = req.body;
 
+  // Check if Firebase token exists in cookies
+  const firebaseToken = req.cookies.firebase_token;
+  if (!firebaseToken) {
+    console.error("❌ No Firebase token found");
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
   if (!code) {
+    console.error("❌ No authorization code provided");
     return res.status(400).json({ error: "Authorization code missing" });
   }
 
@@ -23,16 +31,15 @@ export default async function handler(req, res) {
       }),
     });
 
+    const tokenData = await tokenResponse.json();
+
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error("❌ Printful token exchange failed:", errorData);
-      throw new Error(`Failed to exchange token with Printful: ${errorData.error || 'Unknown error'}`);
+      console.error("❌ Printful token exchange failed:", tokenData);
+      throw new Error(tokenData.error || 'Failed to exchange token');
     }
 
-    const tokenData = await tokenResponse.json();
     console.log("✅ Token exchange successful");
 
-    // Set cookies with domain attribute
     const cookieOptions = {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
@@ -42,6 +49,7 @@ export default async function handler(req, res) {
       domain: process.env.NODE_ENV === "production" ? ".sendshop.net" : "localhost"
     };
 
+    // Set both tokens
     res.setHeader('Set-Cookie', [
       serialize('printful_token', tokenData.access_token, cookieOptions),
       serialize('printful_store_id', tokenData.store_id.toString(), cookieOptions)

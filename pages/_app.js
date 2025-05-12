@@ -16,10 +16,19 @@ export default function App({ Component, pageProps }) {
   useEffect(() => {
     const auth = getAuth(firebaseApp);
     
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User signed in:", user.email);
-        setIsAuthenticated(true);
+        
+        // Get and set Firebase token in cookie
+        try {
+          const firebaseToken = await user.getIdToken();
+          document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Error setting Firebase token:", error);
+          setIsAuthenticated(false);
+        }
         
         // Only redirect to dashboard if user is on home page
         if (router.pathname === "/") {
@@ -27,6 +36,8 @@ export default function App({ Component, pageProps }) {
         }
       } else {
         console.log("User signed out");
+        // Clear Firebase token cookie on sign out
+        document.cookie = "firebase_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
         setIsAuthenticated(false);
         
         // Redirect to home if trying to access protected routes
