@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { CartProvider } from "@/components/CartContext";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
+import firebaseApp from "@/lib/firebaseClient";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function App({ Component, pageProps }) {
@@ -10,7 +11,7 @@ export default function App({ Component, pageProps }) {
   const isDashboard = router.pathname.startsWith("/dashboard");
 
   useEffect(() => {
-    const auth = getAuth();
+    const auth = getAuth(firebaseApp);
 
     const refreshTokens = async () => {
       const user = auth.currentUser;
@@ -25,11 +26,10 @@ export default function App({ Component, pageProps }) {
       }
     };
 
-    // Refresh token immediately and set up periodic refresh
     refreshTokens();
     const interval = setInterval(refreshTokens, 30 * 60 * 1000); // Refresh every 30 minutes
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function App({ Component, pageProps }) {
   }, []);
 
   useEffect(() => {
-    const auth = getAuth();
+    const auth = getAuth(firebaseApp);
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
