@@ -89,6 +89,7 @@ export default async function handler(req, res) {
 
   try {
     // ✅ Fetch products from Printful API
+    let result;
     try {
       const resp = await fetch("https://api.printful.com/store/products", {
         headers: {
@@ -104,7 +105,8 @@ export default async function handler(req, res) {
         throw new Error(`Printful API error: ${error.message || resp.statusText}`);
       }
 
-      const { result } = await resp.json();
+      const data = await resp.json();
+      result = data.result;
       console.log("Printful API result:", result);
 
       if (!Array.isArray(result)) {

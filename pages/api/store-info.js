@@ -16,8 +16,12 @@ export default async function handler(req, res) {
     const decoded = await authAdmin.verifyIdToken(token);
     console.log("Decoded UID:", decoded.uid);
   } catch (err) {
+    if (err.code === "auth/id-token-expired") {
+      console.error("Firebase token has expired. Prompting client to refresh.");
+      return res.status(401).json({ error: "Firebase token expired. Please refresh and try again." });
+    }
     console.error("Error verifying token:", err);
-    return res.status(401).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ error: "Invalid Firebase token" });
   }
 
   try {
