@@ -13,35 +13,29 @@ export default function ProductList({ isAuthenticated }) {
   const router = useRouter();
   const auth = getAuth();
 
-  // Add auth state listener
+  // Combine auth and products fetch in one useEffect
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.push('/login');
         return;
       }
+
       setUserId(user.uid);
+
+      // Only fetch products if we have a Printful token
+      const printfulToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('printful_token='))
+        ?.split('=')[1];
+
+      if (printfulToken) {
+        await fetchProducts(user.uid);
+      }
     });
 
     return () => unsubscribe();
   }, [auth, router]);
-
-  // Handle Printful token and products fetch
-  useEffect(() => {
-    if (!userId || !isAuthenticated) return;
-
-    const printfulToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('printful_token='))
-      ?.split('=')[1];
-
-    if (!printfulToken) {
-      setError("Please connect your Printful account first");
-      return;
-    }
-
-    fetchProducts(userId);
-  }, [userId, isAuthenticated]);
 
   const fetchProducts = async (uid) => {
     try {
@@ -61,6 +55,7 @@ export default function ProductList({ isAuthenticated }) {
         thumbnail_url: doc.data().thumbnail_url || ""
       }));
       setProducts(results);
+      setError(null); // Clear any existing errors
     } catch (err) {
       console.error("Error fetching products:", err);
       setError("Failed to load products");
@@ -78,6 +73,7 @@ export default function ProductList({ isAuthenticated }) {
         throw new Error("Please sign in to sync products");
       }
 
+      // Check for Printful token
       const printfulToken = document.cookie
         .split('; ')
         .find(row => row.startsWith('printful_token='))
@@ -99,13 +95,13 @@ export default function ProductList({ isAuthenticated }) {
         credentials: "include"
       });
 
+      const data = await res.json();
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to sync products");
+        throw new Error(data.error || "Failed to sync products");
       }
 
-      const data = await res.json();
-      setSuccess(`✅ Successfully synced ${data.count} products`);
+      setSuccess(`✅ Successfully synced ${data.count || 0} products`);
       await fetchProducts(user.uid);
     } catch (err) {
       console.error("Sync error:", err);
