@@ -17,7 +17,7 @@ export default function ProductList() {
 
     setUserId(user.uid);
     fetchProducts(user.uid);
-  }, []);
+  }, [auth.currentUser]); // Add the missing dependency
 
   const fetchProducts = async (uid) => {
     try {
@@ -164,7 +164,7 @@ export default function ProductList() {
             {products.length === 0 && (
               <tr>
                 <td colSpan="4" className="p-4 text-center text-gray-500">
-                  No products found. Click "Sync Now" to import your products from Printful.
+                  No products found. Click &quot;Sync Now&quot; to import your products from Printful.
                 </td>
               </tr>
             )}
