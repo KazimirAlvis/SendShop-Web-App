@@ -180,7 +180,7 @@ export default function ProductList({ isAuthenticated }) {
           ) : '🔄 Sync Now'}
         </button>
 
-            // Add this to your return statement, just below the Sync Now button
+          
             <button
               onClick={() => {
                 console.log("Manual cookie check:");
