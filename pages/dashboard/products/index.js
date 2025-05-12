@@ -19,8 +19,23 @@ export default function ProductList({ isAuthenticated }) {
       return;
     }
 
+    const auth = getAuth();
     const user = auth.currentUser;
-    if (!user) return;
+    
+    if (!user) {
+      console.error("No authenticated user found");
+      return;
+    }
+
+    // Check for Printful token on component mount
+    const printfulToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('printful_token='))
+      ?.split('=')[1];
+
+    if (!printfulToken) {
+      console.log("No Printful token found");
+    }
 
     setUserId(user.uid);
     fetchProducts(user.uid);
@@ -28,7 +43,12 @@ export default function ProductList({ isAuthenticated }) {
 
   const fetchProducts = async (uid) => {
     try {
-      const q = query(collection(db, "products"), where("sellerId", "==", uid));
+      if (!db) {
+        throw new Error("Firestore not initialized");
+      }
+      
+      const productsRef = collection(db, "products");
+      const q = query(productsRef, where("sellerId", "==", uid));
       const querySnapshot = await getDocs(q);
       const results = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -40,8 +60,8 @@ export default function ProductList({ isAuthenticated }) {
       }));
       setProducts(results);
     } catch (err) {
-      setError("Failed to load products");
       console.error("Error fetching products:", err);
+      setError("Failed to load products");
     }
   };
 
@@ -59,10 +79,11 @@ export default function ProductList({ isAuthenticated }) {
       return;
     }
 
-    // Add this check for Printful token
+    // Updated Printful token check
     const printfulToken = document.cookie
       .split('; ')
-      .find(row => row.startsWith('printful_token='));
+      .find(row => row.startsWith('printful_token='))
+      ?.split('=')[1];
 
     if (!printfulToken) {
       setError("Please connect your Printful account first");
