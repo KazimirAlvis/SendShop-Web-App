@@ -10,6 +10,7 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
   const isDashboard = router.pathname.startsWith("/dashboard");
 
+  // ✅ Refresh Firebase tokens periodically
   useEffect(() => {
     const auth = getAuth(firebaseApp);
 
@@ -22,6 +23,10 @@ export default function App({ Component, pageProps }) {
           console.log("Firebase token refreshed:", token);
         } catch (err) {
           console.error("Failed to refresh Firebase token:", err);
+          if (err.code === "auth/id-token-expired") {
+            console.error("Token expired. Redirecting to login...");
+            router.push("/login");
+          }
         }
       }
     };
@@ -52,6 +57,7 @@ export default function App({ Component, pageProps }) {
     fetchPrintfulToken();
   }, []);
 
+  // ✅ Listen for authentication state changes
   useEffect(() => {
     const auth = getAuth(firebaseApp);
 
@@ -60,6 +66,9 @@ export default function App({ Component, pageProps }) {
         console.log("User signed in:", user.email);
       } else {
         console.log("User signed out");
+        // Clear the Firebase token cookie on sign-out
+        document.cookie = "firebase_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+        router.push("/login");
       }
     });
 
