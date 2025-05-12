@@ -1,45 +1,5 @@
-import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin"; // Ensure authAdmin is imported
+import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin"; // Firebase Admin SDK
 import { parse } from "cookie";
-import { getAuth } from "firebase/auth";
-import { useEffect } from "react";
-
-console.log("authAdmin initialized:", !!authAdmin);
-console.log("dbAdmin initialized:", !!dbAdmin);
-
-const auth = getAuth();
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    const token = await user.getIdToken();
-    document.cookie = `firebase_token=${token}; path=/;`;
-  }
-});
-
-useEffect(() => {
-  const refreshTokens = async () => {
-    const user = auth.currentUser;
-    if (user) {
-      const token = await user.getIdToken(true); // Force refresh
-      document.cookie = `firebase_token=${token}; path=/;`;
-      console.log("Firebase token refreshed:", token);
-    }
-  };
-
-  refreshTokens();
-}, []);
-
-const fetchPrintfulToken = async () => {
-  const res = await fetch("/api/getPrintfulToken");
-  if (res.ok) {
-    const { printful_token } = await res.json();
-    document.cookie = `printful_token=${printful_token}; path=/;`;
-    console.log("Printful token refreshed:", printful_token);
-  } else {
-    console.error("Failed to fetch Printful token");
-  }
-};
-
-// Call this function after redirection
-fetchPrintfulToken();
 
 export default async function handler(req, res) {
   console.log("Request method:", req.method);
@@ -161,4 +121,3 @@ export default async function handler(req, res) {
     message: "Products synced successfully",
   });
 }
-
