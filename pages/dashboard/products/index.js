@@ -19,60 +19,74 @@ export default function ProductList() {
     fetchProducts(user.uid);
   }, []);
 
-const fetchProducts = async (uid) => {
-  const q = query(collection(db, "products"), where("sellerId", "==", uid));
-  const querySnapshot = await getDocs(q);
-  const results = querySnapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name || "Untitled Product",
-      price: data.price || 0, // Default to 0 if price is missing
-      description: data.description || "No description available",
-      thumbnail_url: data.thumbnail_url || "", // Ensure thumbnail_url is always present
-    };
-  });
-  setProducts(results);
-};
+  const fetchProducts = async (uid) => {
+    try {
+      const q = query(collection(db, "products"), where("sellerId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const results = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        name: doc.data().name || "Untitled Product",
+        price: doc.data().price || 0,
+        description: doc.data().description || "No description available",
+        thumbnail_url: doc.data().thumbnail_url || ""
+      }));
+      setProducts(results);
+    } catch (err) {
+      setError("Failed to load products");
+      console.error("Error fetching products:", err);
+    }
+  };
 
   const handleSync = async () => {
     setSyncing(true);
     setError(null);
     setSuccess(null);
 
-    if (!userId) {
-      setError("User ID is not available. Please log in again.");
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      setError("Please sign in to sync products");
+      setSyncing(false);
+      return;
+    }
+
+    // Add this check for Printful token
+    const printfulToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('printful_token='));
+
+    if (!printfulToken) {
+      setError("Please connect your Printful account first");
       setSyncing(false);
       return;
     }
 
     try {
+      const token = await user.getIdToken(true);
       console.log("Sending sync request...");
+      
       const res = await fetch("/api/printful-sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ Ensure cookies are sent
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        credentials: "include"
       });
 
-      console.log("Sync response status:", res.status);
-
       if (!res.ok) {
-        let error;
-        try {
-          error = await res.json();
-        } catch {
-          throw new Error("Failed to parse server response");
-        }
-        throw new Error(error.details || error.error || "Failed to sync");
+        const error = await res.json();
+        throw new Error(error.error || "Failed to sync products");
       }
 
       const data = await res.json();
       setSuccess(`✅ Synced ${data.count} products`);
-      if (userId) {
-        await fetchProducts(userId);
-      }
+      await fetchProducts(user.uid);
     } catch (err) {
-      setError(`❌ Sync failed: ${err.message || "Network error"}`);
+      setError(`❌ Sync failed: ${err.message}`);
+      console.error("Sync error:", err);
     } finally {
       setSyncing(false);
     }
@@ -85,39 +99,77 @@ const fetchProducts = async (uid) => {
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className={`px-4 py-2 rounded text-white transition-colors ${
+            syncing 
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
         >
-          {syncing ? "Syncing..." : "🔄 Sync Now"}
+          {syncing ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              </svg>
+              Syncing...
+            </span>
+          ) : '🔄 Sync Now'}
         </button>
       </div>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      {success && <p className="text-green-600 mb-4">{success}</p>}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <p className="text-green-700">{success}</p>
+        </div>
+      )}
 
-      <div className="overflow-x-auto">
-        <tbody>
-  {products.map((p) => (
-    <tr key={p.id} className="border-t hover:bg-gray-50">
-      <td className="p-2 border">{p.name || "No Name"}</td>
-      <td className="p-2 border">
-        {typeof p.price === "number" ? `$${p.price.toFixed(2)}` : "N/A"}
-      </td>
-      <td className="p-2 border">{p.description || "No Description"}</td>
-      <td className="p-2 border text-blue-600 underline break-all">
-        <a href={p.thumbnail_url} target="_blank" rel="noopener noreferrer">
-          {p.thumbnail_url ? "View Image" : "No Image"}
-        </a>
-      </td>
-    </tr>
-  ))}
-  {products.length === 0 && (
-    <tr>
-      <td colSpan="4" className="p-4 text-center text-gray-500">
-        No products found.
-      </td>
-    </tr>
-  )}
-</tbody>
+      <div className="overflow-x-auto rounded-lg shadow">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="p-2 text-left">Product Name</th>
+              <th className="p-2 text-left">Price</th>
+              <th className="p-2 text-left">Description</th>
+              <th className="p-2 text-left">Image</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {products.map((p) => (
+              <tr key={p.id} className="hover:bg-gray-50">
+                <td className="p-2">{p.name}</td>
+                <td className="p-2">
+                  {typeof p.price === "number" ? `$${p.price.toFixed(2)}` : "N/A"}
+                </td>
+                <td className="p-2">{p.description}</td>
+                <td className="p-2">
+                  {p.thumbnail_url ? (
+                    <a
+                      href={p.thumbnail_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      View Image
+                    </a>
+                  ) : "No Image"}
+                </td>
+              </tr>
+            ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan="4" className="p-4 text-center text-gray-500">
+                  No products found. Click "Sync Now" to import your products from Printful.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

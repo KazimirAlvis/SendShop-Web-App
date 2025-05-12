@@ -1,123 +1,147 @@
-import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin"; // Firebase Admin SDK
+import { authAdmin, dbAdmin } from "@/lib/firebaseAdmin";
 import { parse } from "cookie";
 
 export default async function handler(req, res) {
-  console.log("Request method:", req.method);
+  console.log("Starting Printful sync process...");
 
-  // ✅ Ensure the request method is POST
+  // Validate request method
   if (req.method !== "POST") {
     console.error("Method not allowed:", req.method);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  // ✅ Parse cookies from the request
+  // Get tokens from both cookies and Authorization header
+  const authHeader = req.headers.authorization;
   const cookies = req.headers.cookie;
-  if (!cookies) {
-    return res.status(401).json({ error: "No cookie header found" });
+  
+  if (!cookies && !authHeader) {
+    return res.status(401).json({ error: "No authentication credentials found" });
   }
 
-  const { firebase_token, printful_token } = parse(cookies);
-  console.log("Parsed tokens:", { firebase_token, printful_token });
+  // Parse tokens from different sources
+  const parsedCookies = cookies ? parse(cookies) : {};
+  const firebase_token = authHeader?.startsWith('Bearer ') 
+    ? authHeader.split('Bearer ')[1] 
+    : parsedCookies.firebase_token;
+  const printful_token = parsedCookies.printful_token;
 
   if (!firebase_token) {
-    return res.status(401).json({ error: "No Firebase token found in cookie" });
+    return res.status(401).json({ error: "No Firebase token found" });
   }
 
   if (!printful_token) {
-    return res.status(401).json({ error: "No Printful token found in cookie" });
+    return res.status(401).json({ error: "No Printful token found" });
   }
 
-  // ✅ Verify Firebase token and extract UID
+  // Verify Firebase token and extract UID
   let uid;
   try {
     const decodedToken = await authAdmin.verifyIdToken(firebase_token);
-    console.log("Decoded Firebase token:", decodedToken);
     uid = decodedToken.uid;
-    console.log("Decoded UID:", uid);
+    console.log("Authenticated user:", decodedToken.email);
   } catch (err) {
-    console.error("Failed to verify Firebase token:", err);
-    return res.status(401).json({ error: "Invalid Firebase token" });
+    console.error("Firebase token verification failed:", err);
+    return res.status(401).json({ 
+      error: "Invalid Firebase token",
+      code: err.code === "auth/id-token-expired" ? "TOKEN_EXPIRED" : "INVALID_TOKEN"
+    });
   }
 
-  if (!uid) {
-    console.error("UID is not available after decoding the token.");
-    return res.status(401).json({ error: "User ID is not available" });
-  }
-
-  // ✅ Fetch products from Printful API
+  // Fetch products from Printful API
   let result;
   try {
     const resp = await fetch("https://api.printful.com/store/products", {
       headers: {
         Authorization: `Bearer ${printful_token}`,
-      },
+        'Content-Type': 'application/json'
+      }
     });
-
-    console.log("Printful API response status:", resp.status);
 
     if (!resp.ok) {
       const error = await resp.json();
-      console.error("Printful API error:", error);
-      throw new Error(`Printful API error: ${error.message || resp.statusText}`);
+      throw new Error(error.message || `HTTP ${resp.status}: ${resp.statusText}`);
     }
 
     const data = await resp.json();
     result = data.result;
-    console.log("Printful API result:", result);
 
     if (!Array.isArray(result)) {
-      throw new Error("Unexpected API result");
+      throw new Error("Invalid response format from Printful API");
     }
   } catch (err) {
-    console.error("❌ Failed to fetch products from Printful API:", err);
-    return res.status(500).json({ error: "Failed to fetch products from Printful API", details: err.message });
+    console.error("Printful API error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch products from Printful",
+      details: err.message 
+    });
   }
 
-  // ✅ Write products to Firestore
+  // Prepare Firestore batch operations
   const batch = dbAdmin.batch();
-  const syncedProductIds = [];
+  const syncedProducts = [];
 
-  for (const item of result) {
-    if (!item.id) {
-      console.warn("Skipping item with missing ID:", item);
-      continue;
-    }
+  for (const product of result) {
+    if (!product.id) continue;
 
-    // Calculate price based on variants
-    let price = 0;
-    if (item.variants && Array.isArray(item.variants)) {
-      const firstVariant = item.variants[0];
-      price = firstVariant.retail_price || 0;
-    }
+    // Calculate product price
+    const price = product.variants?.[0]?.retail_price || 0;
 
-    // Map Printful API fields to Firestore fields
-    const ref = dbAdmin.collection("products").doc(item.id.toString());
-    console.log("Writing product to Firestore with UID:", uid);
-    batch.set(ref, {
-      name: item.name || "Untitled Product",
-      price,
-      description: item.description || "No description available",
-      thumbnail_url: item.thumbnail_url || "",
-      external_id: item.external_id || "",
-      synced: item.variants ? item.variants.length : 0,
+    // Create product document reference
+    const productRef = dbAdmin.collection("products").doc(product.id.toString());
+
+    // Prepare product data
+    const productData = {
+      name: product.name || "Untitled Product",
+      price: parseFloat(price),
+      description: product.description || "",
+      thumbnail_url: product.thumbnail_url || "",
+      external_id: product.external_id || "",
+      variantCount: product.variants?.length || 0,
       syncedAt: new Date().toISOString(),
       sellerId: uid,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Add to batch
+    batch.set(productRef, productData, { merge: true });
+    syncedProducts.push({
+      id: product.id,
+      name: product.name
     });
-    syncedProductIds.push(item.id);
   }
 
+  // Update shop document with sync information
+  const shopRef = dbAdmin.collection("shops").doc(uid);
+  batch.set(shopRef, {
+    lastSyncAt: new Date().toISOString(),
+    productCount: syncedProducts.length,
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+
+  // Commit all changes
   try {
     await batch.commit();
-    console.log("Products synced successfully:", syncedProductIds);
-  } catch (err) {
-    console.error("Error writing to Firestore:", err);
-    return res.status(500).json({ error: "Failed to write to Firestore", details: err.message });
-  }
+    console.log(`Successfully synced ${syncedProducts.length} products`);
 
-  // ✅ Return success response
-  return res.status(200).json({
-    count: syncedProductIds.length,
-    syncedProductIds,
-    message: "Products synced successfully",
-  });
+    return res.status(200).json({
+      success: true,
+      message: "Products synced successfully",
+      count: syncedProducts.length,
+      products: syncedProducts
+    });
+  } catch (err) {
+    console.error("Firestore batch commit failed:", err);
+    return res.status(500).json({
+      error: "Failed to save products",
+      details: err.message
+    });
+  }
 }
+
+// Add API config
+export const config = {
+  api: {
+    bodyParser: true,
+    externalResolver: true,
+  },
+};
