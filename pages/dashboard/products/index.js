@@ -17,36 +17,34 @@ export default function ProductList({ isAuthenticated }) {
   const validatePrintfulToken = () => {
     console.log("Starting token validation...");
     
-    // Check for window and document
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      console.log("Window or document not available");
+    if (typeof window === 'undefined') {
+      console.log("Window not available (server-side)");
       return false;
     }
 
-    try {
-      // Parse cookies with URLSearchParams for better handling
-      const cookieObj = Object.fromEntries(
-        document.cookie.split('; ').map(c => {
-          const [key, ...v] = c.split('=');
-          return [key, v.join('=')];
-        })
-      );
-
-      console.log("Parsed cookies:", cookieObj);
-      const printfulToken = cookieObj.printful_token;
-      
-      if (printfulToken) {
-        console.log("Found Printful token:", printfulToken);
-        setHasValidPrintfulToken(true);
-        return true;
-      }
-      
-      setHasValidPrintfulToken(false);
-      return false;
-    } catch (err) {
-      console.error("Error parsing cookies:", err);
+    // Simple direct cookie check for Printful token
+    const cookies = document.cookie;
+    
+    if (!cookies || cookies.trim() === '') {
+      console.log("No cookies found");
       return false;
     }
+
+    const printfulToken = cookies
+      .split(';')
+      .map(cookie => cookie.trim())
+      .find(cookie => cookie.startsWith('printful_token='))
+      ?.split('=')[1];
+
+    if (printfulToken) {
+      console.log("Found Printful token");
+      setHasValidPrintfulToken(true);
+      return true;
+    }
+
+    console.log("No Printful token found in cookies");
+    setHasValidPrintfulToken(false);
+    return false;
   };
 
   useEffect(() => {
@@ -62,25 +60,18 @@ export default function ProductList({ isAuthenticated }) {
         return;
       }
 
-      // Increased delay to ensure cookies are set
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      setUserId(user.uid);
-      
-      // Check if we're returning from Printful auth
-      const isFromPrintful = router.query.from === 'printful';
-      if (isFromPrintful) {
-        console.log("Returning from Printful auth, waiting for cookies...");
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for cookies to be set after Printful auth
+      if (router.query.from === 'printful') {
+        console.log("Returning from Printful, waiting for cookies...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
+      setUserId(user.uid);
       const hasPrintfulToken = validatePrintfulToken();
       
       if (hasPrintfulToken) {
-        console.log("Found Printful token, fetching products...");
         await fetchProducts(user.uid);
       } else {
-        console.log("No Printful token found, raw cookies:", document.cookie);
         setError("Please connect your Printful account first");
       }
     };
