@@ -14,17 +14,26 @@ export default function ProductList({ isAuthenticated }) {
   const router = useRouter();
   const auth = getAuth();
 
-  // Check Printful token
+  // Check Printful token with better logging
   const validatePrintfulToken = () => {
-    const printfulToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('printful_token='))
-      ?.split('=')[1];
+    console.log("Checking cookies:", document.cookie); // Debug log
+
+    if (typeof document === 'undefined') {
+      console.log("Document not available yet");
+      return false;
+    }
+
+    const cookies = document.cookie.split('; ');
+    console.log("All cookies:", cookies); // Debug log
+
+    const printfulToken = cookies.find(row => row.startsWith('printful_token='))?.split('=')[1];
+    console.log("Found printful token:", printfulToken ? "Yes" : "No"); // Debug log
 
     if (printfulToken) {
       setHasValidPrintfulToken(true);
       return true;
     }
+    
     setHasValidPrintfulToken(false);
     return false;
   };
@@ -37,16 +46,19 @@ export default function ProductList({ isAuthenticated }) {
         return;
       }
 
-      setUserId(user.uid);
-      const hasPrintfulToken = validatePrintfulToken();
-      
-      if (hasPrintfulToken) {
-        console.log("Found Printful token, fetching products...");
-        await fetchProducts(user.uid);
-      } else {
-        console.log("No Printful token found");
-        setError("Please connect your Printful account first");
-      }
+      // Add small delay to ensure cookies are available
+      setTimeout(() => {
+        setUserId(user.uid);
+        const hasPrintfulToken = validatePrintfulToken();
+        
+        if (hasPrintfulToken) {
+          console.log("Found Printful token, fetching products...");
+          fetchProducts(user.uid);
+        } else {
+          console.log("No Printful token found in cookies:", document.cookie);
+          setError("Please connect your Printful account first");
+        }
+      }, 100);
     });
 
     return () => unsubscribe();
