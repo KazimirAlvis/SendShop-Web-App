@@ -13,7 +13,7 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
 
-  // Add this function to handle Firebase token setting
+  // Set Firebase token in cookie
   const setFirebaseToken = async (user) => {
     try {
       const token = await user.getIdToken();
@@ -25,36 +25,17 @@ export default function App({ Component, pageProps }) {
     }
   };
 
-  useEffect(() => {
-    const auth = getAuth(firebaseApp);
-    
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        console.log("User signed in:", user.email);
-        await setFirebaseToken(user);
-      } else {
-        setIsAuthenticated(false);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // ONLY check Printful token - don't set it
-  const checkPrintfulToken = () => {
-    if (typeof window === 'undefined') return false;
-    
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('printful_token='))
-      ?.split('=')[1];
-
-    setHasPrintfulToken(Boolean(token));
-    return Boolean(token);
+  // Check Printful connection status via API
+  const checkPrintfulStatus = async () => {
+    try {
+      const res = await fetch('/api/printful-status', { credentials: 'include' });
+      const data = await res.json();
+      setHasPrintfulToken(!!data.connected);
+    } catch (err) {
+      setHasPrintfulToken(false);
+    }
   };
 
-  // Authentication state listener
   useEffect(() => {
     const auth = getAuth(firebaseApp);
     let mounted = true;
@@ -64,21 +45,21 @@ export default function App({ Component, pageProps }) {
 
       if (user) {
         console.log("User signed in:", user.email);
-        await setFirebaseToken(user); // Only set Firebase token
-        checkPrintfulToken(); // Just check if Printful token exists
-        
+        await setFirebaseToken(user);
+        await checkPrintfulStatus();
+
         if (router.pathname === "/") {
           router.push("/dashboard");
         }
       } else {
         setIsAuthenticated(false);
         setHasPrintfulToken(false);
-        
+
         if (isDashboard) {
           router.push("/");
         }
       }
-      
+
       setLoading(false);
     });
 
