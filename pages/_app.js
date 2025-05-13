@@ -9,8 +9,19 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasPrintfulToken, setHasPrintfulToken] = useState(false);
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
+
+  // Check for Printful token
+  const checkPrintfulToken = () => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('printful_token='))
+      ?.split('=')[1];
+    setHasPrintfulToken(!!token);
+    return !!token;
+  };
 
   // Authentication state listener
   useEffect(() => {
@@ -20,27 +31,31 @@ export default function App({ Component, pageProps }) {
       if (user) {
         console.log("User signed in:", user.email);
         
-        // Get and set Firebase token in cookie
         try {
           const firebaseToken = await user.getIdToken();
-          document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          // Set Firebase token with secure attributes
+          document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; secure=${process.env.NODE_ENV === 'production'}`;
           setIsAuthenticated(true);
+          
+          // Check Printful token after Firebase auth
+          checkPrintfulToken();
         } catch (error) {
           console.error("Error setting Firebase token:", error);
           setIsAuthenticated(false);
         }
         
-        // Only redirect to dashboard if user is on home page
         if (router.pathname === "/") {
           router.push("/dashboard");
         }
       } else {
         console.log("User signed out");
-        // Clear Firebase token cookie on sign out
+        // Clear all auth tokens
         document.cookie = "firebase_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = "printful_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = "printful_store_id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
         setIsAuthenticated(false);
+        setHasPrintfulToken(false);
         
-        // Redirect to home if trying to access protected routes
         if (isDashboard) {
           router.push("/");
         }
@@ -62,7 +77,14 @@ export default function App({ Component, pageProps }) {
     return <div>Redirecting...</div>;
   }
 
-  const content = <Component {...pageProps} isAuthenticated={isAuthenticated} />;
+  // Pass both auth states to components
+  const content = (
+    <Component 
+      {...pageProps} 
+      isAuthenticated={isAuthenticated}
+      hasPrintfulToken={hasPrintfulToken}
+    />
+  );
 
   return (
     <CartProvider>
