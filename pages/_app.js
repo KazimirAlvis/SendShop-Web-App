@@ -13,17 +13,24 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
 
-  // ONLY handle Firebase token
-  const setFirebaseToken = async (user) => {
-    try {
-      const token = await user.getIdToken();
-      document.cookie = `firebase_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error("Firebase token error:", error);
-      setIsAuthenticated(false);
-    }
-  };
+  useEffect(() => {
+    const auth = getAuth(firebaseApp);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User signed in:", user.email);
+        // ONLY set Firebase token here
+        const token = await user.getIdToken();
+        document.cookie = `firebase_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // ONLY check Printful token - don't set it
   const checkPrintfulToken = () => {
