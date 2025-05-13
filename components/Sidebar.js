@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 export default function Sidebar() {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(router.pathname.startsWith("/dashboard/settings"));
+  const [showConnections, setShowConnections] = useState(router.pathname.startsWith("/dashboard/connections"));
 
   return (
     <aside className="w-60 bg-gray-100 h-screen flex flex-col justify-between p-4">
@@ -15,6 +16,7 @@ export default function Sidebar() {
           <li><Link href="/dashboard/products" className="block hover:bg-gray-100">Products</Link></li>
           <li><Link href="/dashboard/orders" className="block hover:underline">Orders</Link></li>
           <li><Link href="/dashboard/messages" className="block hover:underline">Messages</Link></li>
+          {/* Settings Dropdown */}
           <li>
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -31,19 +33,35 @@ export default function Sidebar() {
               </ul>
             )}
           </li>
-          <li className="mt-4">
-  <button
-    onClick={() => {
-      const clientId = process.env.NEXT_PUBLIC_PRINTFUL_CLIENT_ID;
-      const redirectUrl = `${window.location.origin}/oauth/callback`;
-      window.location.href = `https://www.printful.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_url=${redirectUrl}`;
-    }}
-    className="text-sm text-blue-600 hover:underline"
-  >
-    🔗 Connect to Printful
-  </button>
-</li>
-
+          {/* Connections Dropdown */}
+          <li>
+            <button
+              onClick={() => setShowConnections(!showConnections)}
+              className="w-full text-left hover:underline"
+            >
+              Connections {showConnections ? "▲" : "▼"}
+            </button>
+            {showConnections && (
+              <ul className="ml-4 mt-2 space-y-1">
+                <li>
+                  <Link href="/dashboard/connections/printful" className="block hover:underline">
+                    Printful
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/connections/stripe" className="block hover:underline">
+                    Stripe
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/connections/domain" className="block hover:underline">
+                    Custom Domain
+                  </Link>
+                </li>
+                {/* Add more connections here */}
+              </ul>
+            )}
+          </li>
         </ul>
       </div>
 
