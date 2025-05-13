@@ -9,9 +9,10 @@ import {
   Cog6ToothIcon,
   LinkIcon,
   ArrowRightOnRectangleIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 
-export default function Sidebar() {
+export default function Sidebar({ shopSlug }) {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(router.pathname.startsWith("/dashboard/settings"));
   const [showConnections, setShowConnections] = useState(router.pathname.startsWith("/dashboard/connections"));
@@ -131,16 +132,28 @@ export default function Sidebar() {
           </li>
         </ul>
       </div>
-      <button
-        onClick={async () => {
-          await fetch("/api/logout");
-          window.location.href = "/login";
-        }}
-        className="flex items-center gap-2 mt-6 text-sm text-red-600 hover:underline"
-      >
-        <ArrowRightOnRectangleIcon className="h-5 w-5" />
-        Sign Out
-      </button>
+      <div className="flex flex-col gap-2">
+        {shopSlug && (
+          <Link
+            href={`/${shopSlug}`}
+            target="_blank"
+            className="flex items-center gap-2 px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition mb-2 justify-center"
+          >
+            <EyeIcon className="h-5 w-5" />
+            View Your Shop
+          </Link>
+        )}
+        <button
+          onClick={async () => {
+            await fetch("/api/logout");
+            window.location.href = "/login";
+          }}
+          className="flex items-center gap-2 text-sm text-red-600 hover:underline justify-center"
+        >
+          <ArrowRightOnRectangleIcon className="h-5 w-5" />
+          Sign Out
+        </button>
+      </div>
     </aside>
   );
 }

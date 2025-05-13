@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { db } from "@/lib/firebaseClient";
+import { collection, getDocs, query, where, setDoc, doc } from "firebase/firestore";
+import { auth } from '../lib/firebase';
 import Header from '@/components/Header';
 import Link from "next/link";
 
@@ -31,8 +32,26 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError(null);
+
+    // Collect form data
+    const form = Object.fromEntries(new FormData(e.target));
+    const storeName = form.storeName.trim();
+    const storeSlug = storeName
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-]/g, ""); // Remove special chars
+
+    // Check for uniqueness
+    const existing = await getDocs(
+      query(collection(db, "shops"), where("slug", "==", storeSlug))
+    );
+    if (!existing.empty) {
+      setError("That store name is already taken. Please choose another.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
@@ -51,7 +70,8 @@ export default function Signup() {
 
       // ✅ Also create store doc for this seller
       await setDoc(doc(db, 'shops', uid), {
-        storeName: form.storeName,
+        storeName,
+        slug: storeSlug,
         createdAt: new Date(),
       });
 
