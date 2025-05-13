@@ -20,6 +20,7 @@ export default async function handler(req, res) {
 
   // Parse tokens from different sources
   const parsedCookies = cookies ? parse(cookies) : {};
+  console.log('Received cookies:', parsedCookies);
   const firebase_token = authHeader?.startsWith('Bearer ') 
     ? authHeader.split('Bearer ')[1] 
     : parsedCookies.firebase_token;

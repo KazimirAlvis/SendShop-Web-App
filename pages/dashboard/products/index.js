@@ -107,42 +107,25 @@ export default function ProductList({ isAuthenticated }) {
   const handleSync = async () => {
     setSyncing(true);
     setError(null);
-    setSuccess(null);
 
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error("Please sign in to sync products");
-      }
-
-      const hasPrintfulToken = validatePrintfulToken();
-      if (!hasPrintfulToken) {
-        throw new Error("Please connect your Printful account first");
-      }
-
-      const token = await user.getIdToken(true);
-      console.log("Starting sync process...");
-      
-      const res = await fetch("/api/printful-sync", {
-        method: "POST",
+      const res = await fetch('/api/printful-sync', {
+        method: 'POST',
+        credentials: 'include',
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        credentials: "include"
+          'Content-Type': 'application/json'
+        }
       });
 
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || "Failed to sync products");
+        throw new Error(data.error || 'Sync failed');
       }
 
-      setSuccess(`✅ Successfully synced ${data.count || 0} products`);
-      await fetchProducts(user.uid);
-    } catch (err) {
-      console.error("Sync error:", err);
-      setError(err.message);
+      setSuccess('Products synced successfully');
+    } catch (error) {
+      setError(error.message);
     } finally {
       setSyncing(false);
     }

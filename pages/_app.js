@@ -47,7 +47,7 @@ export default function App({ Component, pageProps }) {
     
     const token = document.cookie
       .split('; ')
-      .find(row => row.startsWith('token=')) // Look for 'token=' not 'printful_token='
+      .find(row => row.startsWith('printful_token='))
       ?.split('=')[1];
 
     setHasPrintfulToken(Boolean(token));

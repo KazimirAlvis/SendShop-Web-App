@@ -30,26 +30,26 @@ export default async function handler(req, res) {
       })
     });
 
-    if (!tokenResponse.ok) {
-      const error = await tokenResponse.json();
-      throw new Error(error.error || 'Failed to exchange Printful token');
-    }
-
     const data = await tokenResponse.json();
     
-    // Set Printful cookies
+    if (!tokenResponse.ok) {
+      throw new Error(data.error || 'Failed to exchange token');
+    }
+
+    // Update cookie name to printful_token
     res.setHeader('Set-Cookie', [
-      serialize('token', data.access_token, {
+      serialize('printful_token', data.access_token, {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
-        httpOnly: false,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       })
     ]);
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error('❌ Printful token exchange error:', error);
+    console.error('Token exchange error:', error);
     return res.status(500).json({ error: error.message });
   }
 }
