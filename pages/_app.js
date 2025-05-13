@@ -13,16 +13,25 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
 
+  // Add this function to handle Firebase token setting
+  const setFirebaseToken = async (user) => {
+    try {
+      const token = await user.getIdToken();
+      document.cookie = `firebase_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Error setting Firebase token:", error);
+      setIsAuthenticated(false);
+    }
+  };
+
   useEffect(() => {
     const auth = getAuth(firebaseApp);
     
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User signed in:", user.email);
-        // ONLY set Firebase token here
-        const token = await user.getIdToken();
-        document.cookie = `firebase_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-        setIsAuthenticated(true);
+        await setFirebaseToken(user);
       } else {
         setIsAuthenticated(false);
       }
