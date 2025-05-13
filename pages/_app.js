@@ -13,46 +13,55 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
 
+  // Improved token management
+  const setAuthTokens = async (user) => {
+    try {
+      const firebaseToken = await user.getIdToken();
+      // Set Firebase token cookie
+      document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      
+      // Don't try to set Printful token here - it will be set by OAuth callback
+      setIsAuthenticated(true);
+      checkPrintfulToken(); // Just check if it exists
+    } catch (error) {
+      console.error("Error setting auth tokens:", error);
+      setIsAuthenticated(false);
+    }
+  };
+
   // Check for Printful token
   const checkPrintfulToken = () => {
+    if (typeof window === 'undefined') return false;
+    
     const token = document.cookie
       .split('; ')
       .find(row => row.startsWith('printful_token='))
       ?.split('=')[1];
-    setHasPrintfulToken(!!token);
-    return !!token;
+
+    const hasToken = Boolean(token);
+    setHasPrintfulToken(hasToken);
+    return hasToken;
   };
 
   // Authentication state listener
   useEffect(() => {
     const auth = getAuth(firebaseApp);
-    
+    let mounted = true;
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!mounted) return;
+
       if (user) {
         console.log("User signed in:", user.email);
+        await setAuthTokens(user);
         
-        try {
-          const firebaseToken = await user.getIdToken();
-          // Set Firebase token with secure attributes
-          document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; secure=${process.env.NODE_ENV === 'production'}`;
-          setIsAuthenticated(true);
-          
-          // Check Printful token after Firebase auth
-          checkPrintfulToken();
-        } catch (error) {
-          console.error("Error setting Firebase token:", error);
-          setIsAuthenticated(false);
-        }
-        
+        // Only redirect to dashboard from home page
         if (router.pathname === "/") {
           router.push("/dashboard");
         }
       } else {
-        console.log("User signed out");
-        // Clear all auth tokens
+        // Clear auth state and tokens
         document.cookie = "firebase_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-        document.cookie = "printful_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-        document.cookie = "printful_store_id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
         setIsAuthenticated(false);
         setHasPrintfulToken(false);
         
@@ -60,10 +69,14 @@ export default function App({ Component, pageProps }) {
           router.push("/");
         }
       }
+      
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [router.pathname]);
 
   // Show loading state
