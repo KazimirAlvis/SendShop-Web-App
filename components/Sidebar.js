@@ -11,6 +11,7 @@ import {
   ArrowRightOnRectangleIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
+import { getAuth, signOut } from "firebase/auth";
 
 export default function Sidebar({ shopSlug }) {
   const router = useRouter();
@@ -22,6 +23,16 @@ export default function Sidebar({ shopSlug }) {
   const navHover =
     "hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700";
   const navActive = "bg-blue-50 text-blue-700 font-semibold";
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(getAuth());
+      await fetch("/api/logout"); // If you use an API route to clear cookies
+      window.location.href = "/login";
+    } catch (err) {
+      alert("Sign out failed. Please try again.");
+    }
+  };
 
   return (
     <aside className="w-64 bg-gray-50 h-screen flex flex-col justify-between p-4 border-r border-gray-200">
@@ -67,6 +78,7 @@ export default function Sidebar({ shopSlug }) {
           {/* Settings Dropdown */}
           <li>
             <button
+              type="button"
               onClick={() => setShowSettings(!showSettings)}
               className={`${navItem} ${navHover} w-full text-left ${showSettings ? navActive : ""}`}
             >
@@ -102,6 +114,7 @@ export default function Sidebar({ shopSlug }) {
           {/* Connections Dropdown */}
           <li>
             <button
+              type="button"
               onClick={() => setShowConnections(!showConnections)}
               className={`${navItem} ${navHover} w-full text-left ${showConnections ? navActive : ""}`}
             >
@@ -144,10 +157,8 @@ export default function Sidebar({ shopSlug }) {
           </Link>
         )}
         <button
-          onClick={async () => {
-            await fetch("/api/logout");
-            window.location.href = "/login";
-          }}
+          type="button"
+          onClick={handleSignOut}
           className="flex items-center gap-2 text-sm text-red-600 hover:underline justify-center"
         >
           <ArrowRightOnRectangleIcon className="h-5 w-5" />
