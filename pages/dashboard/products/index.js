@@ -172,9 +172,14 @@ export default function ProductList({ isAuthenticated, hasPrintfulToken: initial
                       href={p.thumbnail_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline"
+                      className="inline-block"
                     >
-                      View Image
+                      <img
+                        src={p.thumbnail_url}
+                        alt={p.name}
+                        className="h-12 w-12 object-cover rounded shadow"
+                        style={{ maxWidth: 48, maxHeight: 48 }}
+                      />
                     </a>
                   ) : "No Image"}
                 </td>
