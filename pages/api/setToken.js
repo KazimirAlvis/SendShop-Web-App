@@ -1,72 +1,70 @@
 import { serialize } from "cookie";
 
 export default async function handler(req, res) {
-  const { code } = req.body;
-
-  // Check if Firebase token exists in cookies
-  const firebaseToken = req.cookies.firebase_token;
-  if (!firebaseToken) {
-    console.error("❌ No Firebase token found");
-    return res.status(401).json({ error: "Authentication required" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { code } = req.body;
+
   if (!code) {
-    console.error("❌ No authorization code provided");
-    return res.status(400).json({ error: "Authorization code missing" });
+    return res.status(400).json({ error: 'Missing authorization code' });
   }
 
   try {
-    console.log("🔄 Exchanging authorization code for Printful token...");
+    console.log("Exchanging code for Printful token...");
     const tokenResponse = await fetch('https://api.printful.com/oauth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         grant_type: 'authorization_code',
-        code: code,
+        code,
         client_id: process.env.PRINTFUL_CLIENT_ID,
         client_secret: process.env.PRINTFUL_CLIENT_SECRET,
-        redirect_uri: process.env.PRINTFUL_REDIRECT_URI,
-      }),
+        redirect_uri: process.env.PRINTFUL_REDIRECT_URI
+      })
     });
 
-    const tokenData = await tokenResponse.json();
+    const data = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      console.error("❌ Printful token exchange failed:", tokenData);
-      throw new Error(tokenData.error || 'Failed to exchange token');
+      console.error("Printful token exchange failed:", data);
+      throw new Error(data.error || 'Failed to exchange token');
     }
 
-    console.log("✅ Token exchange successful");
-
+    // Set multiple cookies for different token aspects
     const cookieOptions = {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
+      path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-      domain: process.env.NODE_ENV === "production" ? ".sendshop.net" : "localhost"
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
     };
 
-    // Set both tokens
     res.setHeader('Set-Cookie', [
-      serialize('printful_token', tokenData.access_token, cookieOptions),
-      serialize('printful_store_id', tokenData.store_id.toString(), cookieOptions)
+      // Main access token
+      serialize('printful_token', data.access_token, cookieOptions),
+      // Store ID for API calls
+      serialize('printful_store_id', data.store_id.toString(), cookieOptions),
+      // Refresh token for getting new access tokens
+      serialize('printful_refresh_token', data.refresh_token, {
+        ...cookieOptions,
+        httpOnly: true // Keep refresh token secure
+      })
     ]);
 
-    // Verify cookies were set
-    console.log("🍪 Cookies set with options:", cookieOptions);
-
+    console.log("Successfully set Printful tokens");
     return res.status(200).json({ 
       success: true,
-      message: "Tokens set successfully"
+      store_id: data.store_id
     });
   } catch (error) {
-    console.error('❌ Token exchange error:', error);
+    console.error('Token exchange error:', error);
     return res.status(500).json({ 
       error: error.message,
-      details: "Check server logs for more information"
+      details: "Failed to exchange Printful authorization code"
     });
   }
 }

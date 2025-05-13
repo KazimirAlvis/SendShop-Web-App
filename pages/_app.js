@@ -13,34 +13,29 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
   const isDashboard = router.pathname.startsWith("/dashboard");
 
-  // Improved token management
-  const setAuthTokens = async (user) => {
+  // ONLY handle Firebase token
+  const setFirebaseToken = async (user) => {
     try {
-      const firebaseToken = await user.getIdToken();
-      // Set Firebase token cookie
-      document.cookie = `firebase_token=${firebaseToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      
-      // Don't try to set Printful token here - it will be set by OAuth callback
+      const token = await user.getIdToken();
+      document.cookie = `firebase_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       setIsAuthenticated(true);
-      checkPrintfulToken(); // Just check if it exists
     } catch (error) {
-      console.error("Error setting auth tokens:", error);
+      console.error("Firebase token error:", error);
       setIsAuthenticated(false);
     }
   };
 
-  // Check for Printful token
+  // ONLY check Printful token - don't set it
   const checkPrintfulToken = () => {
     if (typeof window === 'undefined') return false;
     
     const token = document.cookie
       .split('; ')
-      .find(row => row.startsWith('printful_token='))
+      .find(row => row.startsWith('token=')) // Look for 'token=' not 'printful_token='
       ?.split('=')[1];
 
-    const hasToken = Boolean(token);
-    setHasPrintfulToken(hasToken);
-    return hasToken;
+    setHasPrintfulToken(Boolean(token));
+    return Boolean(token);
   };
 
   // Authentication state listener
@@ -53,15 +48,13 @@ export default function App({ Component, pageProps }) {
 
       if (user) {
         console.log("User signed in:", user.email);
-        await setAuthTokens(user);
+        await setFirebaseToken(user); // Only set Firebase token
+        checkPrintfulToken(); // Just check if Printful token exists
         
-        // Only redirect to dashboard from home page
         if (router.pathname === "/") {
           router.push("/dashboard");
         }
       } else {
-        // Clear auth state and tokens
-        document.cookie = "firebase_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
         setIsAuthenticated(false);
         setHasPrintfulToken(false);
         
